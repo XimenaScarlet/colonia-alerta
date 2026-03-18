@@ -1,36 +1,34 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Colonia Alerta - PWA de Reporte Urbano 🏙️
 
-## Getting Started
+Plataforma de reporte ciudadano para Saltillo y Ramos Arizpe, construida usando tecnologías web modernas con especial énfasis en un robusto soporte Offline.
 
-First, run the development server:
+## Características Principales
+
+1. **Service Worker PWA:** Aplicación web verdaderamente instalable desde el navegador y disponible fuera de línea.
+2. **First-Class Offline Mode (IndexedDB):** Si pierdes la señal mientras documentas un bache, el reporte y la foto se guardan de forma local persistente.
+3. **Mapas Nativos Interactivos** con OpenStreetMap y geolocalización.
+4. **Híbrida Rendering (SSR y CSR):** React Server Components (App Router) en Estadísticas y Dashboard para mayor velocidad; Renderizado en Cliente para Formularios y Mapas con acceso a Hardware.
+5. **Simulación Notificaciones Nativas:** Acceso y permisos reales a Notificaciones Web (*Notification API*).
+
+## Instrucciones para Ejecución Local
+
+Para correr el proyecto tal cual lo vería el profesor o jurado (simulando servidor de despliegue):
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# 1. Instalar dependencias
+npm install
+
+# 2. Generar compilación para Producción (Crea el Service Worker sw.js)
+npm run build
+
+# 3. Arrancar servidor de Producción de Next.js
+npm run start
 ```
+Luego visita `http://localhost:3000` en Chrome.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+*Si solo quieres ver el código correr rápido:* `npm run dev` (Nota: en modo dev el Service Worker está inhabilitado por caché, no se sentirá como PWA).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Entregables Académicos Incluidos
+En la carpeta `/docs` encontrarás los 6 documentos de texto listos requeridos para redactar tu proyecto final o presentación técnica en el formato exigido: Justificación, Parámetros, Pruebas, Guias Funcionales y No Funcionales, y la Guía de Vercel.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+`Autor: Proyecto Escolar Desarrollado con Next.js 15+`
