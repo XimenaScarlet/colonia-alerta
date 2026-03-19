@@ -102,12 +102,21 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.sub = user.id;
         token.id = user.id;
+        // Obtener el rol del usuario desde la BD
+        const dbUser = await prisma.user.findUnique({
+          where: { id: user.id },
+          select: { role: true },
+        });
+        if (dbUser) {
+          token.role = dbUser.role;
+        }
       }
       return token;
     },
     async session({ session, token }) {
       if (session && session.user) {
         (session.user as any).id = token.id || token.sub;
+        (session.user as any).role = token.role;
       }
       return session;
     },
