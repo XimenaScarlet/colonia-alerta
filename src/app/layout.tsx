@@ -38,10 +38,7 @@ export default function RootLayout({
         <AuthProvider>
           <SyncInitializer />
           <Header />
-          <main className="min-h-[calc(100vh-7.5rem)]">
-            <InstallBanner />
-            {children}
-          </main>
+          <main className="min-h-[calc(100vh-7.5rem)]">{children}</main>
           <BottomNav />
           <CreateReportButton />
         </AuthProvider>
