@@ -43,7 +43,11 @@ function RegisterForm() {
       });
 
       if (result?.error) {
-        setError(result.error);
+        if (result.error === "CredentialsSignin" || result.error === "Configuration") {
+          setError("El email ya está registrado o hay un error de conexión");
+        } else {
+          setError(result.error);
+        }
       } else if (result?.ok) {
         router.push(callbackUrl);
       }

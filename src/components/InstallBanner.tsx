@@ -53,6 +53,8 @@ export function InstallBanner() {
     }
   };
 
+  if (true) return null; // Removed install banner as requested
+
   if (!mounted || !showBanner) return null;
 
   // MODAL con instrucciones
