@@ -41,6 +41,7 @@ model User {
   emailVerified DateTime?
   password      String?   // Para Credentials provider
   image         String?
+  role          String    @default("user")  // "user" o "admin"
   accounts      Account[]
   sessions      Session[]
   reports       Report[]  // Relación con reportes creados

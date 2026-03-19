@@ -1,12 +1,15 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { Bell, Download, X } from 'lucide-react';
+import { Bell, Download, X, Settings } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { reportService, userService } from '@/lib/api-client';
 
 export function Header() {
   const pathname = usePathname();
+  const { data: session } = useSession();
   const [showInstallGuide, setShowInstallGuide] = useState(false);
 
   // Sistema de Notificaciones / Alarma
@@ -64,6 +67,7 @@ export function Header() {
     '/reportar': 'Nuevo Reporte',
     '/mis-reportes': 'Mis Reportes',
     '/estadisticas': 'Estadísticas',
+    '/admin': 'Panel de Administración',
   };
 
   const title = titles[pathname] || 'Colonia Alerta';
@@ -73,6 +77,15 @@ export function Header() {
       <header className="fixed top-0 w-full bg-sky-500 text-white h-14 flex items-center justify-between px-4 z-50 shadow-md pt-safe">
         <div className="font-semibold text-lg">{title}</div>
         <div className="flex items-center gap-2">
+          {session?.user?.role === 'admin' && (
+            <Link 
+              href="/admin"
+              className="p-2 rounded-full hover:bg-sky-600 transition-colors"
+              title="Panel Admin"
+            >
+              <Settings size={20} />
+            </Link>
+          )}
           <button 
             onClick={() => setShowInstallGuide(true)}
             className="p-2 rounded-full hover:bg-sky-600 transition-colors"

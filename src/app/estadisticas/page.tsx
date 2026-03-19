@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 
 async function getStatistics() {
   try {
-    // Total de reportes
+    // Total de reportes remotos
     const total = await prisma.report.count();
     const resolved = await prisma.report.count({ where: { status: 'Resuelto' } });
     const pending = await prisma.report.count({ where: { status: 'Pendiente' } });
@@ -68,31 +68,68 @@ export default async function EstadisticasPage() {
   }));
 
   return (
+    <>
+      {/* Componente cliente que agrega reportes offline */}
+      <StatisticsWithOfflineReports serverStats={stats} />
+    </>
+  );
+}
+
+// Componente cliente para incluir reportes offline
+import 'use client';
+import { useEffect, useState } from 'react';
+import { db } from '@/lib/db';
+
+function StatisticsWithOfflineReports({ serverStats }: any) {
+  const [totalWithOffline, setTotalWithOffline] = useState(serverStats.total);
+  const [offlineCount, setOfflineCount] = useState(0);
+
+  useEffect(() => {
+    // Contar reportes offline
+    const countOfflineReports = async () => {
+      try {
+        const offlineReports = await db.reports.filter(r => !r.synced).toArray();
+        setOfflineCount(offlineReports.length);
+        setTotalWithOffline(serverStats.total + offlineReports.length);
+      } catch (error) {
+        console.error('Error counting offline reports:', error);
+      }
+    };
+
+    countOfflineReports();
+  }, [serverStats.total]);
+
+  return (
     <div className="p-4 max-w-lg mx-auto">
       <h2 className="text-2xl font-bold text-gray-800 mb-6">Estadísticas en Tiempo Real</h2>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 gap-3 mb-6">
         <div className="bg-sky-50 rounded-2xl p-4 border border-sky-100 flex flex-col justify-center items-center">
-          <span className="text-3xl font-black text-sky-600">{stats.total}</span>
+          <span className="text-3xl font-black text-sky-600">{totalWithOffline}</span>
           <span className="text-xs font-semibold text-sky-800 uppercase tracking-widest mt-1">
             Reportes Total
           </span>
+          {offlineCount > 0 && (
+            <span className="text-[10px] text-sky-600 mt-1">(+{offlineCount} offline)</span>
+          )}
         </div>
         <div className="bg-emerald-50 rounded-2xl p-4 border border-emerald-100 flex flex-col justify-center items-center">
-          <span className="text-3xl font-black text-emerald-600">{stats.percentageResolved}%</span>
+          <span className="text-3xl font-black text-emerald-600">
+            {totalWithOffline > 0 ? Math.round((serverStats.resolved / totalWithOffline) * 100) : 0}%
+          </span>
           <span className="text-xs font-semibold text-emerald-800 uppercase tracking-widest mt-1">
             Resueltos
           </span>
         </div>
         <div className="bg-orange-50 rounded-2xl p-4 border border-orange-100 flex flex-col justify-center items-center">
-          <span className="text-3xl font-black text-orange-600">{stats.pending}</span>
+          <span className="text-3xl font-black text-orange-600">{serverStats.pending}</span>
           <span className="text-xs font-semibold text-orange-800 uppercase tracking-widest mt-1">
             Pendientes
           </span>
         </div>
         <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100 flex flex-col justify-center items-center">
-          <span className="text-3xl font-black text-blue-600">{stats.inProgress}</span>
+          <span className="text-3xl font-black text-blue-600">{serverStats.inProgress}</span>
           <span className="text-xs font-semibold text-blue-800 uppercase tracking-widest mt-1">
             En Proceso
           </span>
@@ -106,13 +143,13 @@ export default async function EstadisticasPage() {
           <div>
             <div className="flex justify-between text-xs font-medium mb-1 text-gray-600">
               <span>🟠 Pendientes</span>
-              <span>{stats.pending}</span>
+              <span>{serverStats.pending}</span>
             </div>
             <div className="w-full bg-gray-100 rounded-full h-2">
               <div
                 className="bg-orange-500 h-2 rounded-full"
                 style={{
-                  width: `${stats.total > 0 ? (stats.pending / stats.total) * 100 : 0}%`,
+                  width: `${totalWithOffline > 0 ? (serverStats.pending / totalWithOffline) * 100 : 0}%`,
                 }}
               ></div>
             </div>
@@ -120,13 +157,13 @@ export default async function EstadisticasPage() {
           <div>
             <div className="flex justify-between text-xs font-medium mb-1 text-gray-600">
               <span>🔵 En Proceso</span>
-              <span>{stats.inProgress}</span>
+              <span>{serverStats.inProgress}</span>
             </div>
             <div className="w-full bg-gray-100 rounded-full h-2">
               <div
                 className="bg-blue-500 h-2 rounded-full"
                 style={{
-                  width: `${stats.total > 0 ? (stats.inProgress / stats.total) * 100 : 0}%`,
+                  width: `${totalWithOffline > 0 ? (serverStats.inProgress / totalWithOffline) * 100 : 0}%`,
                 }}
               ></div>
             </div>
@@ -134,17 +171,33 @@ export default async function EstadisticasPage() {
           <div>
             <div className="flex justify-between text-xs font-medium mb-1 text-gray-600">
               <span>🟢 Resueltos</span>
-              <span>{stats.resolved}</span>
+              <span>{serverStats.resolved}</span>
             </div>
             <div className="w-full bg-gray-100 rounded-full h-2">
               <div
                 className="bg-emerald-500 h-2 rounded-full"
                 style={{
-                  width: `${stats.total > 0 ? (stats.resolved / stats.total) * 100 : 0}%`,
+                  width: `${totalWithOffline > 0 ? (serverStats.resolved / totalWithOffline) * 100 : 0}%`,
                 }}
               ></div>
             </div>
           </div>
+          {offlineCount > 0 && (
+            <div>
+              <div className="flex justify-between text-xs font-medium mb-1 text-gray-600">
+                <span>⏳ Offline (Sin sincronizar)</span>
+                <span>{offlineCount}</span>
+              </div>
+              <div className="w-full bg-gray-100 rounded-full h-2">
+                <div
+                  className="bg-gray-400 h-2 rounded-full"
+                  style={{
+                    width: `${totalWithOffline > 0 ? (offlineCount / totalWithOffline) * 100 : 0}%`,
+                  }}
+                ></div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -152,17 +205,17 @@ export default async function EstadisticasPage() {
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-6">
         <h3 className="font-bold text-gray-800 mb-4">Reportes por Categoría</h3>
         <div className="space-y-3">
-          {categoryStats.length > 0 ? (
-            categoryStats.map((c: any) => (
-              <div key={c.cat}>
+          {serverStats.byCategory.length > 0 ? (
+            serverStats.byCategory.map((cat: any) => (
+              <div key={cat.category}>
                 <div className="flex justify-between text-xs font-medium mb-1 text-gray-600">
-                  <span>{c.cat}</span>
-                  <span>{c.count} ({c.pct}%)</span>
+                  <span>{cat.category}</span>
+                  <span>{cat._count} ({Math.round((cat._count / totalWithOffline) * 100)}%)</span>
                 </div>
                 <div className="w-full bg-gray-100 rounded-full h-2">
                   <div
-                    className={`h-2 rounded-full ${c.color}`}
-                    style={{ width: `${c.pct}%` }}
+                    className={`h-2 rounded-full ${getCategoryColor(cat.category)}`}
+                    style={{ width: `${Math.round((cat._count / totalWithOffline) * 100)}%` }}
                   ></div>
                 </div>
               </div>
@@ -177,8 +230,8 @@ export default async function EstadisticasPage() {
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-6">
         <h3 className="font-bold text-gray-800 mb-4">Reportes por Municipio</h3>
         <div className="divide-y divide-gray-100">
-          {stats.byMunicipio.length > 0 ? (
-            stats.byMunicipio.map((m: any, idx: number) => (
+          {serverStats.byMunicipio.length > 0 ? (
+            serverStats.byMunicipio.map((m: any, idx: number) => (
               <div key={m.municipio} className="py-3 flex justify-between items-center">
                 <span className="text-sm font-medium text-gray-700">
                   <span className="text-gray-400 font-bold mr-2">{idx + 1}.</span>
@@ -196,11 +249,11 @@ export default async function EstadisticasPage() {
       </div>
 
       {/* Top Colonias Afectadas */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-6">
         <h3 className="font-bold text-gray-800 mb-4">🔝 Top Colonias Afectadas</h3>
         <div className="divide-y divide-gray-50">
-          {stats.byColonia.length > 0 ? (
-            stats.byColonia.map((col: any, i: number) => (
+          {serverStats.byColonia.length > 0 ? (
+            serverStats.byColonia.map((col: any, i: number) => (
               <div key={col.colonia} className="py-2 flex justify-between items-center">
                 <span className="text-sm font-medium text-gray-700 flex items-center gap-2">
                   <span className="text-gray-400 font-bold">#{i + 1}</span>
@@ -217,9 +270,14 @@ export default async function EstadisticasPage() {
         </div>
       </div>
 
-      <p className="text-center text-xs text-gray-400 mt-6">
+      <p className="text-center text-xs text-gray-400 mt-6 mb-4">
         ✓ Datos actualizados en servidor | Última actualización: {new Date().toLocaleTimeString('es-MX')}
       </p>
+      {offlineCount > 0 && (
+        <p className="text-center text-xs text-gray-500 bg-gray-50 px-3 py-2 rounded-lg">
+          ℹ️ Hay {offlineCount} reporte{offlineCount !== 1 ? 's' : ''} sin sincronizar. Se agregarán a las estadísticas cuando recuperes conexión.
+        </p>
+      )}
     </div>
   );
 }

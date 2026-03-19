@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 interface Params {
   id: string;
@@ -40,8 +42,17 @@ export async function PUT(
   context: { params: Promise<Params> }
 ) {
   try {
+    const session = await getServerSession(authOptions);
     const { id } = await context.params;
     const body = await request.json();
+
+    // Solo admins pueden cambiar estado de reportes
+    if (body.status && session?.user?.role !== 'admin') {
+      return NextResponse.json(
+        { success: false, error: 'Solo administradores pueden cambiar el estado de reportes' },
+        { status: 403 }
+      );
+    }
 
     // Obtener el reporte actual para comparar estados
     const currentReport = await prisma.report.findUnique({
