@@ -6,6 +6,7 @@ import { Header } from "@/components/Header";
 import { SyncInitializer } from "@/components/SyncInitializer";
 import { AuthProvider } from "@/components/AuthProvider";
 import { CreateReportButton } from "@/components/CreateReportButton";
+import { InstallPrompt } from "@/components/InstallPrompt";
 
 // Las fuentes no se encuentran, usamos fallback a system fonts para no romper el build
 // const geistSans = localFont({
@@ -46,6 +47,7 @@ export default function RootLayout({
       >
         <AuthProvider>
           <SyncInitializer />
+          <InstallPrompt />
           <Header />
           <main className="min-h-[calc(100vh-7.5rem)]">{children}</main>
           <BottomNav />
