@@ -68,16 +68,23 @@ export const syncService = {
   setupSyncListener() {
     if (typeof window === 'undefined') return;
 
-    const syncOnOnline = async () => {
-      console.log('Conexión restaurada, sincronizando reportes...');
-      const result = await this.syncOfflineReports();
-      if (result.synced > 0) {
-        console.log(`${result.synced} reportes sincronizados exitosamente`);
-        // Emitir evento para que componentes se actualicen
-        window.dispatchEvent(
-          new CustomEvent('reports-synced', { detail: { synced: result.synced } })
-        );
-      }
+    const syncOnOnline = () => {
+      console.log('Conexión restaurada, esperando 3 segundos a que se estabilice el internet...');
+      
+      setTimeout(async () => {
+        const result = await this.syncOfflineReports();
+        if (result.synced > 0) {
+          console.log(`${result.synced} reportes sincronizados exitosamente`);
+          // Emitir evento para que componentes se actualicen
+          window.dispatchEvent(
+            new CustomEvent('reports-synced', { detail: { synced: result.synced } })
+          );
+        } else if (result.errors) {
+          console.error('La sincronización falló para algunos reportes:', result.errors);
+        } else {
+          console.log('No había reportes pendientes o nada que sincronizar.');
+        }
+      }, 3000); // 3 segundos de gracia
     };
 
     // Escuchar cambios de conectividad

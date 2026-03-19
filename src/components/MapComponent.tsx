@@ -33,7 +33,7 @@ const getCategoryIcon = (category: string) => {
   const config = categoryIcons[category] || categoryIcons['Otro'];
 
   return L.icon({
-    iconUrl: `data:image/svg+xml;base64,${btoa(
+    iconUrl: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(
       `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 41">
         <path d="M16 0C7.16 0 0 7.16 0 16c0 8.84 16 25 16 25s16-16.16 16-25c0-8.84-7.16-16-16-16z" fill="${config.color}"/>
         <text x="16" y="18" font-size="20" text-anchor="middle" dominant-baseline="middle">${config.emoji}</text>

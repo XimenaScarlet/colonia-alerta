@@ -19,10 +19,10 @@ export function OfflineStatusBadge() {
   useEffect(() => {
     setIsOnline(navigator.onLine);
 
-    const handleOnline = async () => {
+    const handleOnline = () => {
       setIsOnline(true);
-      // Sincronizar automáticamente cuando se restaura la conexión
-      await handleSync();
+      // Nota: La sincronización automática la maneja globalmente syncService.ts
+      // No hacemos handleSync() aquí para evitar condiciones de carrera (dos syncs al mismo tiempo).
     };
     const handleOffline = () => setIsOnline(false);
 
