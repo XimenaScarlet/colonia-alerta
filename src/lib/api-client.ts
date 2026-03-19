@@ -49,6 +49,16 @@ export const reportService = {
     return response.json();
   },
 
+  // Actualizar cualquier campo de un reporte
+  async updateReport(id: string, data: any) {
+    const response = await fetch(`/api/reports/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return response.json();
+  },
+
   // Actualizar estatus de un reporte
   async updateReportStatus(id: string, status: string) {
     const response = await fetch(`/api/reports/${id}`, {

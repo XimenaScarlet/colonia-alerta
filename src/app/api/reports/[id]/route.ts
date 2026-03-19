@@ -46,15 +46,14 @@ export async function PUT(
     const { id } = await context.params;
     const body = await request.json();
 
-    // Solo admins pueden cambiar estado de reportes
-    if (body.status && session?.user?.role !== 'admin') {
+    if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: 'Solo administradores pueden cambiar el estado de reportes' },
-        { status: 403 }
+        { success: false, error: 'Debes iniciar sesión' },
+        { status: 401 }
       );
     }
 
-    // Obtener el reporte actual para comparar estados
+    // Obtener el reporte actual
     const currentReport = await prisma.report.findUnique({
       where: { id },
     });
@@ -66,13 +65,46 @@ export async function PUT(
       );
     }
 
+    // Validar permisos: solo admin o creador del reporte
+    const isAdmin = session.user.role === 'admin';
+    const isCreator = currentReport.createdBy === session.user.id;
+
+    if (!isAdmin && !isCreator) {
+      return NextResponse.json(
+        { success: false, error: 'No tienes permiso para editar este reporte' },
+        { status: 403 }
+      );
+    }
+
+    // Si no es admin y está intentando cambiar estado, no permitir
+    if (!isAdmin && body.status) {
+      return NextResponse.json(
+        { success: false, error: 'Solo administradores pueden cambiar el estado de reportes' },
+        { status: 403 }
+      );
+    }
+
+    // Construir datos de actualización
+    const updateData: any = {};
+    
+    if (body.title !== undefined) updateData.title = body.title;
+    if (body.description !== undefined) updateData.description = body.description;
+    if (body.category !== undefined) updateData.category = body.category;
+    if (body.municipio !== undefined) updateData.municipio = body.municipio;
+    if (body.colonia !== undefined) updateData.colonia = body.colonia;
+    if (body.lat !== undefined) updateData.lat = body.lat;
+    if (body.lng !== undefined) updateData.lng = body.lng;
+    if (body.priority !== undefined) updateData.priority = body.priority;
+    if (body.status !== undefined) updateData.status = body.status;
+
+    // Registrar fecha de resolución si cambia a Resuelto (solo admin)
+    if (isAdmin && body.status === 'Resuelto' && !currentReport.resolvedAt) {
+      updateData.resolvedAt = new Date();
+    }
+
     const report = await prisma.report.update({
       where: { id },
-      data: {
-        status: body.status,
-        // Registrar fecha de resolución si cambia a Resuelto
-        ...(body.status === 'Resuelto' && !currentReport.resolvedAt && { resolvedAt: new Date() }),
-      },
+      data: updateData,
       include: {
         user: {
           select: { name: true, email: true },
@@ -80,7 +112,6 @@ export async function PUT(
       },
     });
 
-    // Incluir información sobre el cambio para notificaciones
     const statusChanged = currentReport.status !== body.status;
 
     return NextResponse.json({

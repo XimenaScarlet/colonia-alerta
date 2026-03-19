@@ -7,6 +7,8 @@ import { Camera, MapPin, Send, Loader, Check } from 'lucide-react';
 import { db } from '@/lib/db';
 import { reportService, notificationService } from '@/lib/api-client';
 
+export const dynamic = 'force-dynamic';
+
 export default function CreateReportPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
@@ -14,6 +16,8 @@ export default function CreateReportPage() {
   const [geoLoading, setGeoLoading] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [pageLoading, setPageLoading] = useState(true);
   
   // Redirigir a login si no hay sesión
   useEffect(() => {
@@ -22,12 +26,12 @@ export default function CreateReportPage() {
     }
   }, [status, router]);
 
-  if (status === 'loading') {
+  if (status === 'loading' || pageLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-900">
         <div className="text-center">
           <Loader className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-500" />
-          <p className="text-gray-400">Verificando sesión...</p>
+          <p className="text-gray-400">Cargando...</p>
         </div>
       </div>
     );
@@ -71,7 +75,10 @@ export default function CreateReportPage() {
             lat,
             lng
           }));
-          setLocationDisplay(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+          const locationStr = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+          setLocationDisplay(locationStr);
+          // Guardar en localStorage para reutilizar
+          localStorage.setItem('savedLocation', JSON.stringify({ lat, lng, timestamp: new Date().getTime() }));
           setGeoLoading(false);
           notificationService.sendLocationObtained(lat, lng);
         },
@@ -82,6 +89,60 @@ export default function CreateReportPage() {
           alert('No se pudo obtener la ubicación. Por favor, verifica los permisos de geolocalización.');
         }
       );
+    }
+  };
+
+  // Cargar ubicación guardada al montar el componente
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('savedLocation');
+      if (saved) {
+        try {
+          const { lat, lng } = JSON.parse(saved);
+          setFormData(prev => ({ ...prev, lat, lng }));
+          setLocationDisplay(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+        } catch (e) {
+          console.log('Error loading saved location');
+        }
+      }
+    }
+  }, []);
+
+  // Cargar reporte si está en modo edición
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search);
+      const edit = searchParams.get('edit');
+      if (edit) {
+        setEditId(edit);
+        loadReportForEditing(edit);
+      } else {
+        setPageLoading(false);
+      }
+    }
+  }, []);
+
+  const loadReportForEditing = async (reportId: string) => {
+    try {
+      const response = await reportService.getReport(reportId);
+      if (response.success) {
+        const report = response.data;
+        setFormData({
+          title: report.title,
+          description: report.description,
+          category: report.category,
+          priority: report.priority,
+          lat: report.lat,
+          lng: report.lng,
+        });
+        setLocationDisplay(`${report.lat.toFixed(6)}, ${report.lng.toFixed(6)}`);
+      }
+    } catch (error) {
+      console.error('Error loading report:', error);
+      alert('No se pudo cargar el reporte');
+      router.push('/mapa');
+    } finally {
+      setPageLoading(false);
     }
   };
 
@@ -143,14 +204,58 @@ export default function CreateReportPage() {
 
       let savedReport: any = null;
 
-      if (isOnline) {
-        // Si hay conexión, enviar a BD directamente
+      if (editId) {
+        // Modo edición: actualizar reporte existente
         try {
-          const response = await reportService.createReport(reportData);
+          const response = await reportService.updateReport(editId, reportData);
           if (response.success) {
-            savedReport = response.data;
-            
-            // También guardar en Dexie para sincronización rápida
+            setSubmitted(true);
+            setTimeout(() => {
+              router.push('/mapa');
+            }, 1500);
+          } else {
+            throw new Error(response.error || 'Error al actualizar reporte');
+          }
+        } catch (error) {
+          console.error('Error updating report:', error);
+          alert('Error al actualizar reporte. Intenta nuevamente.');
+        }
+      } else {
+        // Modo creación: crear nuevo reporte
+        if (isOnline) {
+          // Si hay conexión, enviar a BD directamente
+          try {
+            const response = await reportService.createReport(reportData);
+            if (response.success) {
+              savedReport = response.data;
+              
+              // También guardar en Dexie para sincronización rápida
+              await db.reports.add({
+                title: formData.title,
+                description: formData.description,
+                category: formData.category,
+                municipio: 'Saltillo',
+                colonia: '',
+                lat: formData.lat,
+                lng: formData.lng,
+                priority: formData.priority,
+                photoUrl: photoPreview || undefined,
+                datetime: new Date().toISOString(),
+                status: 'Pendiente',
+                synced: true
+              });
+
+              notificationService.sendReportCreated(formData.title, formData.category, '');
+              setSubmitted(true);
+              setTimeout(() => {
+                router.push('/reportes');
+              }, 1500);
+            } else {
+              throw new Error(response.error || 'Error al crear reporte');
+            }
+          } catch (error) {
+            console.error('Error saving to API:', error);
+            // Fallback a Dexie si falla API
             await db.reports.add({
               title: formData.title,
               description: formData.description,
@@ -163,16 +268,16 @@ export default function CreateReportPage() {
               photoUrl: photoPreview || undefined,
               datetime: new Date().toISOString(),
               status: 'Pendiente',
-              synced: true
+              synced: false
             });
-
-            notificationService.sendReportCreated(formData.title, formData.category, '');
-          } else {
-            throw new Error(response.error || 'Error al crear reporte');
+            notificationService.sendReportSaved(formData.category, true);
+            setSubmitted(true);
+            setTimeout(() => {
+              router.push('/reportes');
+            }, 1500);
           }
-        } catch (error) {
-          console.error('Error saving to API:', error);
-          // Fallback a Dexie si falla API
+        } else {
+          // Sin conexión, guardar en Dexie
           await db.reports.add({
             title: formData.title,
             description: formData.description,
@@ -187,29 +292,14 @@ export default function CreateReportPage() {
             status: 'Pendiente',
             synced: false
           });
+
           notificationService.sendReportSaved(formData.category, true);
+          setSubmitted(true);
+          setTimeout(() => {
+            router.push('/reportes');
+          }, 1500);
         }
-      } else {
-        // Sin conexión, guardar en Dexie
-        await db.reports.add({
-          title: formData.title,
-          description: formData.description,
-          category: formData.category,
-          municipio: 'Saltillo',
-          colonia: '',
-          lat: formData.lat,
-          lng: formData.lng,
-          priority: formData.priority,
-          photoUrl: photoPreview || undefined,
-          datetime: new Date().toISOString(),
-          status: 'Pendiente',
-          synced: false
-        });
-
-        notificationService.sendReportSaved(formData.category, true);
       }
-
-      router.push('/reportes');
     } catch (error) {
       console.error('Error al guardar reporte:', error);
       alert('Hubo un problema al guardar el reporte. Por favor intenta de nuevo.');
@@ -223,8 +313,8 @@ export default function CreateReportPage() {
       <div className="max-w-6xl mx-auto p-4">
         {/* Header */}
         <div className="mb-8 pt-4">
-          <h1 className="text-4xl font-bold text-white mb-2">Nuevo Reporte</h1>
-          <p className="text-gray-400">Su voz es el primer paso para mejorar nuestra comunidad. Complete los detalles a continuación para informar una incidencia de manera precisa.</p>
+          <h1 className="text-4xl font-bold text-white mb-2">{editId ? 'Editar Reporte' : 'Nuevo Reporte'}</h1>
+          <p className="text-gray-400">{editId ? 'Actualiza los detalles de tu reporte' : 'Su voz es el primer paso para mejorar nuestra comunidad. Complete los detalles a continuación para informar una incidencia de manera precisa.'}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="grid md:grid-cols-2 gap-6">
@@ -358,12 +448,12 @@ export default function CreateReportPage() {
               {loading ? (
                 <>
                   <Loader className="w-5 h-5 animate-spin" />
-                  Enviando Reporte...
+                  {editId ? 'Actualizando...' : 'Enviando Reporte...'}
                 </>
               ) : (
                 <>
                   <Send className="w-5 h-5" />
-                  Enviar Reporte
+                  {editId ? 'Actualizar Reporte' : 'Enviar Reporte'}
                 </>
               )}
             </button>

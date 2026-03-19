@@ -50,8 +50,8 @@ export function CreateReportButton() {
 
   if (router && typeof window !== 'undefined') {
     const pathname = window.location.pathname;
-    // Si NO estamos en /reportar, ocultar el botón
-    if (pathname !== '/reportar') {
+    // Si NO estamos en /mapa, ocultar el botón
+    if (pathname !== '/mapa') {
       return null;
     }
   }

@@ -6,7 +6,6 @@ import { Header } from "@/components/Header";
 import { SyncInitializer } from "@/components/SyncInitializer";
 import { AuthProvider } from "@/components/AuthProvider";
 import { CreateReportButton } from "@/components/CreateReportButton";
-import { InstallBanner } from "@/components/InstallBanner";
 
 // Import system fonts as fallbacks, or omit them
 

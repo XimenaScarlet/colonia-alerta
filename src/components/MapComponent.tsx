@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'leaflet/dist/leaflet.css';
@@ -88,6 +88,7 @@ export default function MapComponent() {
   const [loading, setLoading] = useState(true);
   const [expandedMenuId, setExpandedMenuId] = useState<string | null>(null);
   const searchParams = useSearchParams();
+  const router = useRouter();
   const { data: session } = useSession();
   
   const localUserId = userService.getUserId();
@@ -240,7 +241,7 @@ export default function MapComponent() {
                         <>
                           <button
                             onClick={() => {
-                              alert('Editar: Próximamente en web');
+                              router.push(`/reportar?edit=${report.id}`);
                               setExpandedMenuId(null);
                             }}
                             className="w-full flex items-center gap-2 px-3 py-2 text-xs bg-white border border-gray-200 rounded hover:bg-blue-50 transition"
