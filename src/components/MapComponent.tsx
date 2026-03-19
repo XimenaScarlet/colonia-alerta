@@ -90,12 +90,35 @@ export default function MapComponent() {
   const loadReports = async () => {
     try {
       const response = await reportService.getReports({ limit: 200 });
-      if (response.success) {
-        setReports(response.data);
-        setLoading(false);
+      if (response && response.success) {
+        setReports(Array.isArray(response.data) ? response.data : []);
+      } else {
+        throw new Error('Respuesta inválida');
       }
+      setLoading(false);
     } catch (error) {
       console.error('Error loading reports for map:', error);
+      
+      // Fallback a Dexie si estamos offline o falla la API
+      try {
+        const { db } = await import('@/lib/db');
+        const offlineReports = await db.reports.toArray();
+        const formattedLocal = offlineReports.map(r => ({
+          id: r.id?.toString() || Math.random().toString(),
+          title: r.title,
+          description: r.description,
+          category: r.category,
+          municipio: r.municipio,
+          colonia: r.colonia,
+          status: r.status,
+          lat: r.lat,
+          lng: r.lng,
+          createdAt: r.datetime,
+        }));
+        setReports(formattedLocal);
+      } catch (dbError) {
+        setReports([]);
+      }
       setLoading(false);
     }
   };
