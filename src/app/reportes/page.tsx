@@ -34,6 +34,8 @@ export default function ReportesPage() {
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const [reportToDelete, setReportToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   const router = useRouter();
   const localUserId = userService.getUserId();
@@ -123,32 +125,37 @@ export default function ReportesPage() {
     }
   };
 
-  const handleDelete = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    if (!confirm('¿Estás seguro de que deseas eliminar este reporte?')) return;
+  const confirmDelete = async () => {
+    if (!reportToDelete) return;
     
-    setLoading(true);
+    setIsDeleting(true);
     try {
       if (navigator.onLine) {
         // Enviar al servidor si estamos online
-        await reportService.deleteReport(id);
+        await reportService.deleteReport(reportToDelete);
       }
       
       // Eliminar de base local (Dexie) por si acaso de manera silenciosa
       try {
         const { db } = await import('@/lib/db');
-        await db.reports.where('id').equals(id).delete();
+        await db.reports.where('id').equals(reportToDelete).delete();
       } catch (e) {}
 
       // Actualizar UI
-      setReports(prev => prev.filter(r => r.id !== id));
+      setReports(prev => prev.filter(r => r.id !== reportToDelete));
       notificationService.send('✅ Reporte Eliminado', { body: 'El reporte se borró exitosamente' });
     } catch (error) {
       console.error('Error al eliminar', error);
       alert('Hubo un problema al intentar eliminar el reporte.');
     } finally {
-      setLoading(false);
+      setIsDeleting(false);
+      setReportToDelete(null);
     }
+  };
+
+  const handleDelete = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setReportToDelete(id);
   };
 
   const handleCardClick = (report: Report) => {
@@ -426,6 +433,44 @@ export default function ReportesPage() {
                   <Clock size={14} className="text-gray-400" />
                   <span className="text-gray-600">Fecha: {new Date(selectedReport.createdAt).toLocaleDateString('es-MX')}</span>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {reportToDelete && (
+        <div className="fixed inset-0 bg-black/40 z-[600] flex items-center justify-center p-4 backdrop-blur-sm transition-opacity" onClick={() => !isDeleting && setReportToDelete(null)}>
+          <div className="bg-gradient-to-b from-sky-50 to-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl relative animate-in fade-in zoom-in-95 duration-200 border-2 border-sky-100" onClick={e => e.stopPropagation()}>
+            <div className="p-6 text-center">
+              <div className="w-16 h-16 bg-sky-100 text-sky-500 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-sm">
+                <Trash2 size={28} />
+              </div>
+              <h3 className="text-xl font-bold text-sky-950 mb-2">¿Eliminar reporte?</h3>
+              <p className="text-sky-700/80 text-sm mb-6">
+                Esta acción borrará el reporte para siempre y no podrá deshacerse.
+              </p>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setReportToDelete(null)}
+                  disabled={isDeleting}
+                  className="flex-1 py-3 px-4 rounded-xl font-semibold text-sky-600 bg-sky-50 hover:bg-sky-100 transition-colors disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  disabled={isDeleting}
+                  className="flex-1 py-3 px-4 rounded-xl font-semibold text-white bg-sky-500 hover:bg-sky-600 transition-colors shadow-md shadow-sky-200 flex items-center justify-center gap-2 disabled:opacity-70"
+                >
+                  {isDeleting ? (
+                    <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span> Borrando...</>
+                  ) : (
+                    'Eliminar'
+                  )}
+                </button>
               </div>
             </div>
           </div>

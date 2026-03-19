@@ -33,12 +33,15 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body
-        className={`antialiased bg-gray-50 text-gray-900 pb-16 pt-14 min-h-screen`}
+        className={`antialiased bg-white text-gray-900 pb-16 pt-14 min-h-screen`}
       >
         <AuthProvider>
           <SyncInitializer />
           <Header />
-          <main className="min-h-[calc(100vh-7.5rem)]">{children}</main>
+          <main className="min-h-[calc(100vh-7.5rem)]">
+            <InstallBanner />
+            {children}
+          </main>
           <BottomNav />
           <CreateReportButton />
         </AuthProvider>

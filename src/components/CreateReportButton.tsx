@@ -48,6 +48,13 @@ export function CreateReportButton() {
     }
   };
 
+  if (router && typeof window !== 'undefined') {
+    const pathname = window.location.pathname;
+    if (pathname === '/reportar' || pathname.startsWith('/auth')) {
+      return null; // El botón "más" no debe salir si ya estás reportando o iniciando sesión
+    }
+  }
+
   return (
     <>
       {/* Botón flotante mejorado */}
