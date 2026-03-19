@@ -87,6 +87,13 @@ export function Header() {
             </Link>
           )}
           <button 
+            onClick={() => setShowInstallGuide(true)}
+            className="p-2 rounded-full hover:bg-sky-600 transition-colors"
+            title="Instalar app"
+          >
+            <Download size={20} />
+          </button>
+          <button 
             onClick={() => {
               if (latestExternalReport) setShowNotificationPopup(!showNotificationPopup);
               setHasNewAlarm(false);

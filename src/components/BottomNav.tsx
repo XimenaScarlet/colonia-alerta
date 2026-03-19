@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 export function BottomNav() {
   const pathname = usePathname();
 
-  if (pathname === '/' || pathname.startsWith('/auth')) return null; // No nav on splash or auth pages
+  if (pathname === '/') return null; // No nav on splash screen
 
   const links = [
     { href: '/home', label: 'Inicio', icon: Home },

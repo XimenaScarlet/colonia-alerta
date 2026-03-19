@@ -31,11 +31,7 @@ function LoginForm() {
       });
 
       if (result?.error) {
-        if (result.error === "CredentialsSignin" || result.error === "Configuration") {
-          setError("Email o contraseña incorrectos");
-        } else {
-          setError(result.error);
-        }
+        setError(result.error);
       } else if (result?.ok) {
         router.push(callbackUrl);
       }
