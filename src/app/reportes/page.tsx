@@ -431,14 +431,22 @@ export default function ReportesPage() {
                   </div>
                   
                   <div className="flex gap-2">
-                    <button 
-                      onClick={(e) => handleUpvote(e, report.id)}
-                      disabled={report.upvotedBy?.includes(authUserId || localUserId)}
-                      className="text-emerald-600 font-medium text-xs flex items-center gap-1 hover:bg-emerald-50 px-2 py-1 rounded transition disabled:opacity-50 disabled:grayscale"
-                      title="Respaldar problema"
-                    >
-                      👍 {report.upvotes || 0}
-                    </button>
+                    {/* Solo mostrar botón de like si no es tu reporte */}
+                    {report.createdBy !== authUserId && report.createdBy !== localUserId ? (
+                      <button 
+                        onClick={(e) => handleUpvote(e, report.id)}
+                        disabled={report.upvotedBy?.includes(authUserId || localUserId)}
+                        className="text-emerald-600 font-medium text-xs flex items-center gap-1 hover:bg-emerald-50 px-2 py-1 rounded transition disabled:opacity-50 disabled:grayscale"
+                        title="Respaldar problema"
+                      >
+                        👍 {report.upvotes || 0}
+                      </button>
+                    ) : (
+                      /* Mostrar solo contador si es tu reporte */
+                      <div className="text-emerald-600 font-medium text-xs flex items-center gap-1 px-2 py-1">
+                        👍 {report.upvotes || 0}
+                      </div>
+                    )}
                     <div className="text-sky-600 font-medium text-xs flex items-center gap-1 group-hover:underline py-1">
                       <Map size={12} /> Ver
                     </div>
@@ -499,21 +507,29 @@ export default function ReportesPage() {
               </div>
               
               <div className="flex gap-3">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleUpvote(e as any, selectedReport.id);
-                    setSelectedReport({
-                      ...selectedReport,
-                      upvotes: (selectedReport.upvotes || 0) + 1,
-                      upvotedBy: [...(selectedReport.upvotedBy || []), authUserId || localUserId]
-                    });
-                  }}
-                  disabled={selectedReport.upvotedBy?.includes(authUserId || localUserId)}
-                  className="flex-1 py-3 px-4 rounded-xl font-bold bg-white text-emerald-600 border border-emerald-200 hover:bg-emerald-50 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  👍 Respaldar ({selectedReport.upvotes || 0})
-                </button>
+                {/* Solo mostrar botón de respaldar si no es tu reporte */}
+                {selectedReport.createdBy !== authUserId && selectedReport.createdBy !== localUserId ? (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleUpvote(e as any, selectedReport.id);
+                      setSelectedReport({
+                        ...selectedReport,
+                        upvotes: (selectedReport.upvotes || 0) + 1,
+                        upvotedBy: [...(selectedReport.upvotedBy || []), authUserId || localUserId]
+                      });
+                    }}
+                    disabled={selectedReport.upvotedBy?.includes(authUserId || localUserId)}
+                    className="flex-1 py-3 px-4 rounded-xl font-bold bg-white text-emerald-600 border border-emerald-200 hover:bg-emerald-50 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    👍 Respaldar ({selectedReport.upvotes || 0})
+                  </button>
+                ) : (
+                  /* Solo mostrar contador si es tu reporte */
+                  <div className="flex-1 py-3 px-4 rounded-xl font-bold bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center gap-2">
+                    👍 Apoyos recibidos: {selectedReport.upvotes || 0}
+                  </div>
+                )}
                 
                 <a 
                   href={getWhatsAppUrl(selectedReport)}

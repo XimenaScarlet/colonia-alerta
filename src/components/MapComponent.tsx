@@ -6,7 +6,9 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { reportService } from '@/lib/api-client';
+import { reportService, userService } from '@/lib/api-client';
+import { MoreVertical, Edit, Trash2, Share2, ThumbsUp } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 
 interface Report {
   id: string;
@@ -19,6 +21,9 @@ interface Report {
   lat: number;
   lng: number;
   createdAt: string;
+  createdBy?: string;
+  upvotes?: number;
+  upvotedBy?: string[];
 }
 
 // Crear iconos por categoría
@@ -81,7 +86,12 @@ function LocationMarker() {
 export default function MapComponent() {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedMenuId, setExpandedMenuId] = useState<string | null>(null);
   const searchParams = useSearchParams();
+  const { data: session } = useSession();
+  
+  const localUserId = userService.getUserId();
+  const authUserId = session?.user?.id;
   
   const targetLat = searchParams.get('lat');
   const targetLng = searchParams.get('lng');
@@ -120,6 +130,9 @@ export default function MapComponent() {
           lat: r.lat,
           lng: r.lng,
           createdAt: r.datetime,
+          createdBy: localUserId,
+          upvotes: 0,
+          upvotedBy: []
         }));
         setReports(formattedLocal);
       } catch (dbError) {
@@ -179,8 +192,17 @@ export default function MapComponent() {
               icon={getCategoryIcon(report.category)}
             >
               <Popup className="report-popup">
-                <div className="w-48 text-sm">
-                  <h3 className="font-bold text-gray-900 mb-1">{report.title}</h3>
+                <div className="w-56 text-sm">
+                  <div className="flex justify-between items-start gap-2 mb-2">
+                    <h3 className="font-bold text-gray-900 flex-1">{report.title}</h3>
+                    <button
+                      onClick={() => setExpandedMenuId(expandedMenuId === report.id ? null : report.id)}
+                      className="p-1 hover:bg-gray-100 rounded transition"
+                      title="Más opciones"
+                    >
+                      <MoreVertical size={16} className="text-gray-600" />
+                    </button>
+                  </div>
                   
                   <div className="space-y-1 mb-2 border-b pb-2">
                     <div className="text-xs text-gray-600">
@@ -199,11 +221,85 @@ export default function MapComponent() {
                     {report.description}
                   </p>
 
-                  <div className={`text-xs font-medium px-2 py-1 rounded text-center ${getStatusBadgeColor(
-                    report.status
-                  )}`}>
-                    {report.status}
+                  <div className="flex gap-2 mb-2">
+                    <div className={`flex-1 text-xs font-medium px-2 py-1 rounded text-center ${getStatusBadgeColor(
+                      report.status
+                    )}`}>
+                      {report.status}
+                    </div>
+                    {/* Mostrar contador de likes */}
+                    <div className="flex-1 text-xs font-medium px-2 py-1 rounded bg-emerald-50 text-emerald-700 text-center flex items-center justify-center gap-1">
+                      <ThumbsUp size={12} /> {report.upvotes || 0}
+                    </div>
                   </div>
+
+                  {/* Menú de opciones */}
+                  {expandedMenuId === report.id && (
+                    <div className="bg-gray-50 border-t pt-2 mt-2 space-y-2">
+                      {report.createdBy === authUserId && (
+                        <>
+                          <button
+                            onClick={() => {
+                              alert('Editar: Próximamente en web');
+                              setExpandedMenuId(null);
+                            }}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-xs bg-white border border-gray-200 rounded hover:bg-blue-50 transition"
+                          >
+                            <Edit size={14} /> Editar
+                          </button>
+                          <button
+                            onClick={async () => {
+                              if (confirm('¿Eliminar este reporte?')) {
+                                try {
+                                  await reportService.deleteReport(report.id);
+                                  setReports(prev => prev.filter(r => r.id !== report.id));
+                                  setExpandedMenuId(null);
+                                } catch (error) {
+                                  alert('Error al eliminar');
+                                }
+                              }
+                            }}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-xs bg-white border border-red-200 text-red-600 rounded hover:bg-red-50 transition"
+                          >
+                            <Trash2 size={14} /> Eliminar
+                          </button>
+                        </>
+                      )}
+                      
+                      {report.createdBy !== authUserId && report.createdBy !== localUserId && (
+                        <button
+                          onClick={async () => {
+                            try {
+                              await reportService.upvoteReport(report.id, localUserId);
+                              setReports(prev => prev.map(r => 
+                                r.id === report.id 
+                                  ? { ...r, upvotes: (r.upvotes || 0) + 1, upvotedBy: [...(r.upvotedBy || []), localUserId] }
+                                  : r
+                              ));
+                              setExpandedMenuId(null);
+                            } catch (error) {
+                              alert('Error al respaldar');
+                            }
+                          }}
+                          disabled={report.upvotedBy?.includes(authUserId || localUserId)}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-xs bg-white border border-emerald-200 text-emerald-600 rounded hover:bg-emerald-50 transition disabled:opacity-50"
+                        >
+                          <ThumbsUp size={14} /> Respaldar
+                        </button>
+                      )}
+                      
+                      <button
+                        onClick={() => {
+                          const text = `🚨 ${report.title} en ${report.colonia}, ${report.municipio}. Ver: https://colonia-alerta.vercel.app/mapa?lat=${report.lat}&lng=${report.lng}`;
+                          window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+                          setExpandedMenuId(null);
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs bg-white border border-green-200 text-green-600 rounded hover:bg-green-50 transition"
+                      >
+                        <Share2 size={14} /> Compartir
+                      </button>
+                    </div>
+                  )}
                 </div>
               </Popup>
             </Marker>
