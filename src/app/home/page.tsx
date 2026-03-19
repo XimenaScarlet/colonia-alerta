@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Map, PlusCircle, List, BarChart2, AlertCircle } from 'lucide-react';
 import { OfflineStatusBadge } from '@/components/OfflineStatusBadge';
+import { InstallBanner } from '@/components/InstallBanner';
 import { PrismaClient } from '@prisma/client';
 
 async function getStats() {
@@ -23,7 +24,8 @@ export default async function Home() {
 
   return (
     <div className="p-4 space-y-6 max-w-lg mx-auto">
-      {/* Welcome & Overview */}
+      {/* Install Banner - Client Component */}
+      <InstallBanner />
       <section className="bg-sky-500 text-white rounded-2xl p-6 shadow-lg relative overflow-hidden">
         <div className="relative z-10">
           <h2 className="text-2xl font-bold mb-1">¡Hola Ciudadano!</h2>
