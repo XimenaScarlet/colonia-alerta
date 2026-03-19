@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -79,6 +80,10 @@ function LocationMarker() {
 export default function MapComponent() {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
+  const searchParams = useSearchParams();
+  
+  const targetLat = searchParams.get('lat');
+  const targetLng = searchParams.get('lng');
 
   useEffect(() => {
     loadReports();
@@ -123,8 +128,13 @@ export default function MapComponent() {
     }
   };
 
-  // Coordenadas centrales entre Saltillo y Ramos Arizpe
-  const centerPosition: [number, number] = [25.4600, -100.9650];
+  // Coordenadas centrales: si viene de un reporte enfocarlo, si no visión general
+  const centerPosition: [number, number] = targetLat && targetLng 
+    ? [parseFloat(targetLat), parseFloat(targetLng)] 
+    : [25.4600, -100.9650];
+  
+  // Nivel de zoom: 16 (muy cerca) para un reporte específico, 12 para ciudad general
+  const initialZoom = targetLat ? 16 : 12;
 
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
@@ -149,7 +159,7 @@ export default function MapComponent() {
       
       <MapContainer
         center={centerPosition}
-        zoom={12}
+        zoom={initialZoom}
         className="h-full w-full"
         zoomControl={false}
       >

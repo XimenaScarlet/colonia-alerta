@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Filter, ChevronDown, CheckCircle, Clock, MapPin } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Filter, ChevronDown, CheckCircle, Clock, MapPin, Trash2, Map, WifiOff, CloudOff } from 'lucide-react';
 import { reportService, userService, notificationService } from '@/lib/api-client';
 
 interface Report {
@@ -16,6 +17,7 @@ interface Report {
   lng: number;
   createdAt: string;
   createdBy?: string;
+  synced?: boolean;
 }
 
 export default function ReportesPage() {
@@ -23,6 +25,7 @@ export default function ReportesPage() {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
+  const router = useRouter();
   const userId = userService.getUserId();
 
   // Filtros
@@ -83,6 +86,7 @@ export default function ReportesPage() {
           lng: r.lng,
           createdAt: r.datetime,
           createdBy: userId,
+          synced: r.synced,
         }));
         
         // Aplicar filtros locales simples
@@ -106,6 +110,38 @@ export default function ReportesPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (!confirm('¿Estás seguro de que deseas eliminar este reporte?')) return;
+    
+    setLoading(true);
+    try {
+      if (navigator.onLine) {
+        // Enviar al servidor si estamos online
+        await reportService.deleteReport(id);
+      }
+      
+      // Eliminar de base local (Dexie) por si acaso de manera silenciosa
+      try {
+        const { db } = await import('@/lib/db');
+        await db.reports.where('id').equals(id).delete();
+      } catch (e) {}
+
+      // Actualizar UI
+      setReports(prev => prev.filter(r => r.id !== id));
+      notificationService.send('✅ Reporte Eliminado', { body: 'El reporte se borró exitosamente' });
+    } catch (error) {
+      console.error('Error al eliminar', error);
+      alert('Hubo un problema al intentar eliminar el reporte.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCardClick = (report: Report) => {
+    router.push(`/mapa?lat=${report.lat}&lng=${report.lng}`);
   };
 
   const getStatusColor = (status: string) => {
@@ -267,22 +303,44 @@ export default function ReportesPage() {
           {reports.map((report) => (
             <div
               key={report.id}
-              className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md transition-all hover:border-gray-300"
+              onClick={() => handleCardClick(report)}
+              className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md transition-all hover:border-sky-300 cursor-pointer group"
             >
               <div className="flex justify-between items-start mb-2 gap-2">
-                <span className="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-gradient-to-r from-blue-100 to-blue-50 text-blue-700">
-                  {getCategoryLabel(report.category)}
-                </span>
+                <div className="flex flex-col gap-1.5 items-start">
+                  <span className="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-gradient-to-r from-blue-100 to-blue-50 text-blue-700">
+                    {getCategoryLabel(report.category)}
+                  </span>
+                  
+                  {report.synced === false && (
+                    <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 flex items-center gap-1 border border-gray-200" title="Guardado localmente. Esperando internet.">
+                      <CloudOff size={10} /> Local offline
+                    </span>
+                  )}
+                </div>
 
-                <span
-                  className={`flex items-center gap-1 text-xs font-medium px-3 py-1 rounded-full whitespace-nowrap ${getStatusColor(
-                    report.status
-                  )}`}
-                >
-                  {report.status === 'Pendiente' && <Clock size={12} />}
-                  {report.status === 'Resuelto' && <CheckCircle size={12} />}
-                  {report.status}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`flex items-center gap-1 text-xs font-medium px-3 py-1 rounded-full whitespace-nowrap ${getStatusColor(
+                      report.status
+                    )}`}
+                  >
+                    {report.status === 'Pendiente' && <Clock size={12} />}
+                    {report.status === 'Resuelto' && <CheckCircle size={12} />}
+                    {report.status}
+                  </span>
+                  
+                  {/* Botón de eliminar (solo mis reportes) */}
+                  {(tab === 'mios' || report.createdBy === userId) && (
+                    <button
+                      onClick={(e) => handleDelete(e, report.id)}
+                      className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Eliminar reporte"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
+                </div>
               </div>
 
               <h3 className="font-bold text-gray-900 mb-1 text-sm">{report.title}</h3>
@@ -297,9 +355,12 @@ export default function ReportesPage() {
                     📍 <span className="truncate">{report.colonia}, {report.municipio}</span>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-gray-600 font-mono text-xs bg-gray-50 p-1 rounded">
-                    {report.lat.toFixed(4)}<br />{report.lng.toFixed(4)}
+                <div className="text-right flex flex-col items-end gap-1">
+                  <div className="text-gray-600 font-mono text-[10px] bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100">
+                    {report.lat.toFixed(4)}, {report.lng.toFixed(4)}
+                  </div>
+                  <div className="text-sky-600 font-medium text-xs flex items-center gap-1 group-hover:underline">
+                    <Map size={12} /> Ver en mapa
                   </div>
                 </div>
               </div>
