@@ -4,7 +4,14 @@ import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 
-const prisma = new PrismaClient();
+// PrismaClient singleton for Next.js
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined;
+};
+
+export const prisma = globalForPrisma.prisma ?? new PrismaClient();
+
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -17,68 +24,79 @@ export const authOptions: NextAuthOptions = {
         name: { label: "Nombre", type: "text" },
         isRegister: { label: "isRegister", type: "text" },
       },
-      async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error("Email y contraseña requeridos");
-        }
+  async authorize(credentials) {
+    if (!credentials?.email || !credentials?.password) {
+      throw new Error("Email y contraseña requeridos");
+    }
 
-        // Si es registro
-        if (credentials.isRegister === "true") {
-          // Verificar que el usuario no exista
-          const existingUser = await prisma.user.findUnique({
-            where: { email: credentials.email },
-          });
-
-          if (existingUser) {
-            throw new Error("El email ya está registrado");
-          }
-
-          // Crear usuario nuevo
-          const hashedPassword = await bcrypt.hash(credentials.password, 10);
-          const newUser = await prisma.user.create({
-            data: {
-              email: credentials.email,
-              name: credentials.name || credentials.email.split("@")[0],
-              password: hashedPassword,
-            },
-          });
-
-          return {
-            id: newUser.id,
-            email: newUser.email,
-            name: newUser.name,
-          };
-        }
-
-        // Si es login
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
+    try {
+      // Si es registro
+      if (credentials.isRegister === "true") {
+        // Verificar que el usuario no exista
+        const existingUser = await prisma.user.findUnique({
+          where: { email: credentials.email as string },
         });
 
-        if (!user) {
-          throw new Error("Usuario no encontrado");
+        if (existingUser) {
+          throw new Error("El email ya está registrado");
         }
 
-        if (!user.password) {
-          throw new Error("Usuario sin contraseña configurada");
-        }
-
-        const isPasswordValid = await bcrypt.compare(
-          credentials.password,
-          user.password
-        );
-
-        if (!isPasswordValid) {
-          throw new Error("Contraseña incorrecta");
-        }
+        // Crear usuario nuevo
+        const hashedPassword = await bcrypt.hash(credentials.password as string, 10);
+        const newUser = await prisma.user.create({
+          data: {
+            email: credentials.email as string,
+            name: credentials.name as string || (credentials.email as string).split("@")[0],
+            password: hashedPassword,
+          },
+        });
 
         return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
+          id: newUser.id,
+          email: newUser.email,
+          name: newUser.name,
         };
-      },
-    }),
+      }
+
+      // Si es login
+      const user = await prisma.user.findUnique({
+        where: { email: credentials.email as string },
+      });
+
+      if (!user) {
+        throw new Error("Usuario no encontrado");
+      }
+
+      if (!user.password) {
+        throw new Error("Usuario sin contraseña configurada");
+      }
+
+      const isPasswordValid = await bcrypt.compare(
+        credentials.password as string,
+        user.password
+      );
+
+      if (!isPasswordValid) {
+        throw new Error("Contraseña incorrecta");
+      }
+
+      return {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+      };
+    } catch (dbError: any) {
+      console.error('Prisma DB Error:', dbError);
+      
+      // More specific SQLite error handling
+      if (dbError.code === ' SQLITE_ERROR') {
+        throw new Error("Error de base de datos (SQLite). Verifica permisos del archivo.");
+      }
+      
+      throw new Error("Error de base de datos. Intenta de nuevo.");
+    }
+  },
+}),
   ],
   session: {
     strategy: "jwt",
@@ -103,3 +121,12 @@ export const authOptions: NextAuthOptions = {
   },
   secret: process.env.NEXTAUTH_SECRET || "secret-key-development",
 };
+
+// Cleanup on exit (dev HMR safe)
+if (typeof window === 'undefined') {
+  process.on('beforeExit', async () => {
+    await prisma.$disconnect();
+  });
+}
+
+export default authOptions;
