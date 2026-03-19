@@ -305,7 +305,7 @@ export default function CreateReportPage() {
               <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider mb-4">Descripción Detallada</h3>
               <textarea 
                 required
-                rows={4}
+                rows={2}
                 placeholder="Describe lo que está ocurriendo..."
                 className="w-full p-4 bg-gray-900/50 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
                 value={formData.description}
