@@ -23,26 +23,26 @@ export default async function Home() {
   return (
     <>
       {/* Welcome & Overview */}
-      <section className="bg-sky-500 text-white rounded-2xl p-6 shadow-lg relative overflow-hidden">
+      <section className="bg-white border border-gray-100 text-gray-800 rounded-2xl p-6 shadow-sm relative overflow-hidden">
         <div className="relative z-10">
-          <h2 className="text-2xl font-bold mb-1">¡Hola Ciudadano!</h2>
-          <p className="text-sky-100 text-sm mb-4">
+          <h2 className="text-2xl font-bold text-sky-600 mb-1">¡Hola Ciudadano!</h2>
+          <p className="text-gray-500 text-sm mb-4">
             Tu participación hace la diferencia en Saltillo y Ramos Arizpe.
           </p>
           <div className="flex gap-4">
-            <div className="bg-white/20 px-3 py-2 rounded-lg text-center backdrop-blur-sm">
-              <span className="block text-2xl font-bold">{total}</span>
-              <span className="text-xs uppercase tracking-wide">Reportes Totales</span>
+            <div className="bg-sky-50 border border-sky-100 px-3 py-2 rounded-lg text-center backdrop-blur-sm">
+              <span className="block text-2xl font-bold text-sky-700">{total}</span>
+              <span className="text-[10px] text-sky-600 uppercase tracking-wide">Reportes Totales</span>
             </div>
-            <div className="bg-white/20 px-3 py-2 rounded-lg text-center backdrop-blur-sm">
-              <span className="block text-2xl font-bold">{percentageResolved}%</span>
-              <span className="text-xs uppercase tracking-wide">Resueltos</span>
+            <div className="bg-emerald-50 border border-emerald-100 px-3 py-2 rounded-lg text-center backdrop-blur-sm">
+              <span className="block text-2xl font-bold text-emerald-700">{percentageResolved}%</span>
+              <span className="text-[10px] text-emerald-600 uppercase tracking-wide">Resueltos</span>
             </div>
           </div>
         </div>
         
         {/* Decorative background circle */}
-        <div className="absolute -right-12 -bottom-12 w-48 h-48 bg-sky-400 rounded-full opacity-50 blur-2xl"></div>
+        <div className="absolute -right-12 -bottom-12 w-48 h-48 bg-sky-50 rounded-full opacity-50 blur-2xl"></div>
       </section>
 
       {/* Quick Actions */}

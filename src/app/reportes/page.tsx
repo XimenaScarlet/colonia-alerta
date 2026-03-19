@@ -2,8 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Filter, ChevronDown, CheckCircle, Clock, MapPin, Trash2, Map, WifiOff, CloudOff } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import dynamic from 'next/dynamic';
+import { Filter, ChevronDown, CheckCircle, Clock, MapPin, Trash2, Map, WifiOff, CloudOff, X } from 'lucide-react';
 import { reportService, userService, notificationService } from '@/lib/api-client';
+
+const MiniMap = dynamic(() => import('@/components/MiniMap'), { 
+  ssr: false, 
+  loading: () => <div className="w-full h-full bg-gray-100 animate-pulse flex items-center justify-center text-sm text-gray-500">Cargando mapa...</div> 
+});
 
 interface Report {
   id: string;
@@ -21,12 +28,16 @@ interface Report {
 }
 
 export default function ReportesPage() {
+  const { data: session } = useSession();
   const [tab, setTab] = useState<'todos' | 'mios'>('todos');
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  
   const router = useRouter();
-  const userId = userService.getUserId();
+  const localUserId = userService.getUserId();
+  const authUserId = session?.user?.id;
 
   // Filtros
   const [filters, setFilters] = useState({
@@ -55,7 +66,7 @@ export default function ReportesPage() {
     try {
       const response = await reportService.getReports({
         limit: 100,
-        ...(tab === 'mios' && { createdBy: userId }),
+        ...(tab === 'mios' && { createdBy: authUserId || localUserId }),
         ...(filters.category && { category: filters.category }),
         ...(filters.status && { status: filters.status }),
         ...(filters.municipio && { municipio: filters.municipio }),
@@ -85,7 +96,7 @@ export default function ReportesPage() {
           lat: r.lat,
           lng: r.lng,
           createdAt: r.datetime,
-          createdBy: userId,
+          createdBy: localUserId,
           synced: r.synced,
         }));
         
@@ -141,7 +152,7 @@ export default function ReportesPage() {
   };
 
   const handleCardClick = (report: Report) => {
-    router.push(`/mapa?lat=${report.lat}&lng=${report.lng}`);
+    setSelectedReport(report);
   };
 
   const getStatusColor = (status: string) => {
@@ -184,7 +195,7 @@ export default function ReportesPage() {
               : 'text-gray-600 border-transparent hover:text-gray-800'
           }`}
         >
-          Mis Reportes ({reports.filter(r => r.createdBy === userId).length})
+          Mis Reportes ({reports.filter(r => r.createdBy === authUserId || r.createdBy === localUserId).length})
         </button>
       </div>
 
@@ -331,7 +342,7 @@ export default function ReportesPage() {
                   </span>
                   
                   {/* Botón de eliminar (solo mis reportes) */}
-                  {(tab === 'mios' || report.createdBy === userId) && (
+                  {(tab === 'mios' || report.createdBy === authUserId || report.createdBy === localUserId) && (
                     <button
                       onClick={(e) => handleDelete(e, report.id)}
                       className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
@@ -360,7 +371,7 @@ export default function ReportesPage() {
                     {report.lat.toFixed(4)}, {report.lng.toFixed(4)}
                   </div>
                   <div className="text-sky-600 font-medium text-xs flex items-center gap-1 group-hover:underline">
-                    <Map size={12} /> Ver en mapa
+                    <Map size={12} /> Ver info
                   </div>
                 </div>
               </div>
@@ -372,6 +383,54 @@ export default function ReportesPage() {
       <div className="text-center text-xs text-gray-400 mt-6 mb-4">
         Total: {reports.length} reporte{reports.length !== 1 ? 's' : ''} encontrado{reports.length !== 1 ? 's' : ''}
       </div>
+
+      {/* Modal Popup */}
+      {selectedReport && (
+        <div className="fixed inset-0 bg-black/60 z-[500] flex items-center justify-center p-4 backdrop-blur-sm transition-opacity" onClick={() => setSelectedReport(null)}>
+          <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl relative animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <button 
+              onClick={() => setSelectedReport(null)}
+              className="absolute top-3 right-3 p-1.5 bg-white/80 backdrop-blur rounded-full text-gray-600 hover:bg-gray-100 z-10"
+            >
+              <X size={20} />
+            </button>
+            
+            <div className="h-48 w-full relative bg-gray-200">
+              <MiniMap lat={selectedReport.lat} lng={selectedReport.lng} />
+            </div>
+            
+            <div className="p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-sky-100 text-sky-700">
+                  {getCategoryLabel(selectedReport.category)}
+                </span>
+                <span className={`text-[10px] font-medium px-2 py-1 rounded-full ${getStatusColor(selectedReport.status)}`}>
+                  {selectedReport.status}
+                </span>
+              </div>
+              
+              <h3 className="font-bold text-gray-900 text-lg leading-tight mb-2">
+                {selectedReport.title}
+              </h3>
+              
+              <p className="text-gray-600 text-sm mb-4 leading-relaxed">
+                {selectedReport.description}
+              </p>
+              
+              <div className="bg-gray-50 rounded-xl p-3 text-xs space-y-2 border border-gray-100">
+                <div className="flex items-start gap-2">
+                  <MapPin size={14} className="text-gray-400 mt-0.5" />
+                  <span className="text-gray-600">{selectedReport.colonia}, {selectedReport.municipio}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock size={14} className="text-gray-400" />
+                  <span className="text-gray-600">Fecha: {new Date(selectedReport.createdAt).toLocaleDateString('es-MX')}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
