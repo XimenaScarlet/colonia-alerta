@@ -1,17 +1,8 @@
 import { NextAuthOptions } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
-
-// PrismaClient singleton for Next.js
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
-};
-
-export const prisma = globalForPrisma.prisma ?? new PrismaClient();
-
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -88,12 +79,14 @@ export const authOptions: NextAuthOptions = {
     } catch (dbError: any) {
       console.error('Prisma DB Error:', dbError);
       
-      // More specific SQLite error handling
-      if (dbError.code === ' SQLITE_ERROR') {
-        throw new Error("Error de base de datos (SQLite). Verifica permisos del archivo.");
+      if (dbError.code === 'P2002') {
+        throw new Error("El email ya está registrado");
+      }
+      if (dbError.code === 'P1001' || dbError.code?.startsWith('P1')) {
+        throw new Error("Error de conexión a la base de datos");
       }
       
-      throw new Error("Error de base de datos. Intenta de nuevo.");
+      throw new Error("Error de base de datos: " + (dbError.message || "Intenta de nuevo"));
     }
   },
 }),
@@ -121,12 +114,5 @@ export const authOptions: NextAuthOptions = {
   },
   secret: process.env.NEXTAUTH_SECRET || "secret-key-development",
 };
-
-// Cleanup on exit (dev HMR safe)
-if (typeof window === 'undefined') {
-  process.on('beforeExit', async () => {
-    await prisma.$disconnect();
-  });
-}
 
 export default authOptions;

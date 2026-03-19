@@ -1,7 +1,8 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
+
+export const dynamic = "force-dynamic";
 
 async function getStatistics() {
-  const prisma = new PrismaClient();
   try {
     // Total de reportes
     const total = await prisma.report.count();
@@ -51,8 +52,6 @@ async function getStatistics() {
       byMunicipio: [],
       byColonia: [],
     };
-  } finally {
-    await prisma.$disconnect();
   }
 }
 

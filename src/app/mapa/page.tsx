@@ -1,20 +1,9 @@
-'use client';
-
-import dynamic from 'next/dynamic';
-import { Suspense } from 'react';
-
-// Cargar el mapa dinámicamente porque usa APIs del navegador no disponibles en servidor (Window/Document)
-const MapComponent = dynamic(
-  () => import('@/components/MapComponent'),
-  { ssr: false }
-);
+import { MapClientWrapper } from '@/components/MapClientWrapper';
 
 export default function MapPage() {
   return (
     <div className="h-[calc(100vh-7.5rem)] w-full relative">
-      <Suspense fallback={<div>Cargando mapa...</div>}>
-        <MapComponent />
-      </Suspense>
+      <MapClientWrapper />
       
       {/* Botón flotante para crear reporte en la ubicación actual */}
       <div className="absolute bottom-6 right-4 z-[400]">

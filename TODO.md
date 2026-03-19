@@ -1,4 +1,4 @@
-# Fix Prisma DB Error (Registration)
+    # Fix Prisma DB Error (Registration)
 
 ## Plan Status
 - [x] Analyze files & identify root cause 

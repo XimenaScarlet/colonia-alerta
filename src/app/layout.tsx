@@ -8,17 +8,7 @@ import { AuthProvider } from "@/components/AuthProvider";
 import { CreateReportButton } from "@/components/CreateReportButton";
 import { InstallBanner } from "@/components/InstallBanner";
 
-// Las fuentes no se encuentran, usamos fallback a system fonts para no romper el build
-// const geistSans = localFont({
-//   src: "./fonts/GeistVF.woff",
-//   variable: "--font-geist-sans",
-//   weight: "100 900",
-// });
-// const geistMono = localFont({
-//   src: "./fonts/GeistMonoVF.woff",
-//   variable: "--font-geist-mono",
-//   weight: "100 900",
-// });
+// Import system fonts as fallbacks, or omit them
 
 export const metadata: Metadata = {
   title: "Colonia Alerta",

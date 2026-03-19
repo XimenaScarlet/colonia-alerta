@@ -1,10 +1,11 @@
 import Link from 'next/link';
 import { Map, PlusCircle, List, BarChart2, AlertCircle } from 'lucide-react';
 import { OfflineStatusBadge } from '@/components/OfflineStatusBadge';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
+
+export const dynamic = "force-dynamic";
 
 async function getStats() {
-  const prisma = new PrismaClient();
   try {
     const total = await prisma.report.count();
     const resolved = await prisma.report.count({ where: { status: 'Resuelto' } });
@@ -13,8 +14,6 @@ async function getStats() {
   } catch (error) {
     console.error('Error fetching stats:', error);
     return { total: 0, percentageResolved: 0 };
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -92,6 +91,7 @@ export default async function Home() {
           </p>
         </div>
       </section>
-    </div>
+    </>
   );
 }
+

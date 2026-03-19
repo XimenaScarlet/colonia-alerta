@@ -44,8 +44,8 @@ export function InstallBanner() {
     if (!deferredPrompt) return;
     try {
       deferredPrompt.prompt?.();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
+      const choiceResult = await deferredPrompt.userChoice;
+      if (choiceResult?.outcome === 'accepted') {
         setShowBanner(false);
       }
     } catch (error) {
