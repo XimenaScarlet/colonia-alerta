@@ -59,12 +59,50 @@ export default function ReportesPage() {
         ...(filters.colonia && { colonia: filters.colonia }),
       });
 
-      if (response.success) {
-        setReports(response.data);
+      if (response && response.success) {
+        setReports(Array.isArray(response.data) ? response.data : []);
+      } else {
+        throw new Error('Respuesta inválida');
       }
     } catch (error) {
       console.error('Error loading reports:', error);
-      notificationService.sendError('Error al Cargar Reportes', 'Por favor recarga la página');
+      
+      // Fallback a reporte local (Offline PWA)
+      try {
+        const { db } = await import('@/lib/db');
+        const offlineReports = await db.reports.toArray();
+        const formattedLocal = offlineReports.map(r => ({
+          id: r.id?.toString() || Math.random().toString(),
+          title: r.title,
+          description: r.description,
+          category: r.category,
+          municipio: r.municipio,
+          colonia: r.colonia,
+          status: r.status,
+          lat: r.lat,
+          lng: r.lng,
+          createdAt: r.datetime,
+          createdBy: userId,
+        }));
+        
+        // Aplicar filtros locales simples
+        let filtered = formattedLocal;
+        if (filters.category) filtered = filtered.filter(r => r.category === filters.category);
+        if (filters.status) filtered = filtered.filter(r => r.status === filters.status);
+        if (filters.municipio) filtered = filtered.filter(r => r.municipio === filters.municipio);
+        
+        if (filtered.length > 0) {
+          setReports(filtered);
+        } else {
+          setReports([]);
+          if (!navigator.onLine) {
+            notificationService.sendError('Sin Conexión', 'Estás offline y no hay reportes filtrados localmente.');
+          }
+        }
+      } catch (dbError) {
+        notificationService.sendError('Error al Cargar Reportes', 'Estás desconectado y falló la carga local.');
+        setReports([]);
+      }
     } finally {
       setLoading(false);
     }
