@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { Camera, MapPin, Send, Loader } from 'lucide-react';
+import { Camera, MapPin, Send, Loader, Check } from 'lucide-react';
 import { db } from '@/lib/db';
 import { reportService, notificationService } from '@/lib/api-client';
 
@@ -13,6 +13,7 @@ export default function CreateReportPage() {
   const [loading, setLoading] = useState(false);
   const [geoLoading, setGeoLoading] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
   
   // Redirigir a login si no hay sesión
   useEffect(() => {
@@ -21,19 +22,17 @@ export default function CreateReportPage() {
     }
   }, [status, router]);
 
-  // Mostrar loading mientras se verifica la sesión
   if (status === 'loading') {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-gray-900">
         <div className="text-center">
-          <Loader className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
-          <p className="text-gray-600">Verificando sesión...</p>
+          <Loader className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-500" />
+          <p className="text-gray-400">Verificando sesión...</p>
         </div>
       </div>
     );
   }
 
-  // Si no hay sesión, no renderizar nada (ya redirigió)
   if (!session) {
     return null;
   }
@@ -205,181 +204,192 @@ export default function CreateReportPage() {
   };
 
   return (
-    <div className="p-4 max-w-lg mx-auto bg-white rounded-2xl shadow-sm my-4 border border-gray-100">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        
-        {/* Foto (Uso de Hardware) */}
-        <div className="flex flex-col items-center justify-center w-full">
-          {photoPreview ? (
-            <div className="relative w-full h-48 rounded-xl overflow-hidden mb-2">
-              <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
-              <button 
-                type="button"
-                onClick={() => setPhotoPreview(null)}
-                className="absolute top-2 right-2 bg-black/50 text-white p-2 rounded-full text-xl hover:bg-black/70"
-              >
-                ✕
-              </button>
-            </div>
-          ) : (
-            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-sky-300 border-dashed rounded-xl cursor-pointer bg-sky-50 hover:bg-sky-100 transition-colors">
-              <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                <Camera className="w-8 h-8 mb-2 text-sky-500" />
-                <p className="text-sm text-sky-600 font-medium">Tomar o subir foto (opcional)</p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 pb-24">
+      <div className="max-w-2xl mx-auto p-4">
+        {/* Header */}
+        <div className="mb-8 pt-4">
+          <h1 className="text-4xl font-bold text-white mb-2">Nuevo Reporte</h1>
+          <p className="text-gray-400">Su voz es el primer paso para mejorar nuestra comunidad. Complete los detalles a continuación para informar una incidencia de manera precisa.</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          
+          {/* EVIDENCIA VISUAL */}
+          <div className="bg-gray-800/50 rounded-2xl p-6 border border-gray-700">
+            <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider mb-4">Evidencia Visual</h3>
+            {photoPreview ? (
+              <div className="relative w-full aspect-square rounded-xl overflow-hidden mb-4 bg-gray-900">
+                <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
+                <button 
+                  type="button"
+                  onClick={() => setPhotoPreview(null)}
+                  className="absolute top-3 right-3 bg-red-500/80 hover:bg-red-600 text-white p-2.5 rounded-full backdrop-blur-sm"
+                >
+                  ✕
+                </button>
               </div>
-              <input 
-                type="file" 
-                className="hidden" 
-                accept="image/*" 
-                capture="environment" 
-                onChange={handlePhotoCapture}
-              />
-            </label>
-          )}
-        </div>
+            ) : (
+              <label className="flex flex-col items-center justify-center w-full aspect-square rounded-xl cursor-pointer bg-gray-900/50 border-2 border-dashed border-gray-600 hover:border-blue-500/50 transition-all group">
+                <div className="flex flex-col items-center justify-center py-12">
+                  <div className="bg-blue-500/10 p-4 rounded-xl mb-3 group-hover:bg-blue-500/20 transition-colors">
+                    <Camera className="w-10 h-10 text-blue-400" />
+                  </div>
+                  <p className="text-sm text-gray-300 font-medium">Subir foto o vídeo</p>
+                  <p className="text-xs text-gray-500 mt-1">Arrastra o haz clic</p>
+                </div>
+                <input 
+                  type="file" 
+                  className="hidden" 
+                  accept="image/*,video/*" 
+                  capture="environment" 
+                  onChange={handlePhotoCapture}
+                />
+              </label>
+            )}
+          </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Título del Reporte *</label>
-          <input 
-            type="text" 
-            required 
-            placeholder="Ej. Bache profundo en calle principal"
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none"
-            value={formData.title}
-            onChange={e => setFormData({...formData, title: e.target.value})}
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Categoría *</label>
-          <select 
-            required
-            className="w-full p-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-sky-500 outline-none"
-            value={formData.category}
-            onChange={e => setFormData({...formData, category: e.target.value})}
-          >
-            <option value="">Selecciona una categoría</option>
-            <option value="Bache">🕳️ Bache</option>
-            <option value="Luminaria Dañada">💡 Luminaria Dañada</option>
-            <option value="Basura Acumulada">🗑️ Basura Acumulada</option>
-            <option value="Fuga de Agua">💧 Fuga de Agua</option>
-            <option value="Inseguridad">⚠️ Inseguridad</option>
-            <option value="Otro">📍 Otro</option>
-          </select>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Municipio *</label>
+          {/* CATEGORÍA DEL INCIDENTE */}
+          <div className="bg-gray-800/50 rounded-2xl p-6 border border-gray-700">
+            <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider mb-4">Categoría del Incidente</h3>
             <select 
-              className="w-full p-3 border border-gray-300 rounded-lg bg-white"
-              value={formData.municipio}
-              onChange={e => setFormData({...formData, municipio: e.target.value})}
+              required
+              className="w-full p-4 bg-gray-900/50 border border-gray-600 rounded-lg text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-base"
+              value={formData.category}
+              onChange={e => setFormData({...formData, category: e.target.value})}
             >
-              <option value="Saltillo">Saltillo</option>
-              <option value="Ramos Arizpe">Ramos Arizpe</option>
+              <option value="">Infraestructura Vial</option>
+              <option value="Bache">🕳️ Bache</option>
+              <option value="Luminaria Dañada">💡 Luminaria Dañada</option>
+              <option value="Basura Acumulada">🗑️ Basura Acumulada</option>
+              <option value="Fuga de Agua">💧 Fuga de Agua</option>
+              <option value="Inseguridad">⚠️ Inseguridad</option>
+              <option value="Otro">📍 Otro</option>
             </select>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Colonia *</label>
+
+          {/* TÍTULO BREVE */}
+          <div className="bg-gray-800/50 rounded-2xl p-6 border border-gray-700">
+            <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider mb-4">Título Breve</h3>
             <input 
               type="text" 
               required 
-              placeholder="Ej. Mirasierra"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none"
-              value={formData.colonia}
-              onChange={e => setFormData({...formData, colonia: e.target.value})}
+              placeholder="Ej: Socavón en Calle Principal"
+              className="w-full p-4 bg-gray-900/50 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              value={formData.title}
+              onChange={e => setFormData({...formData, title: e.target.value})}
             />
           </div>
-        </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Descripción *</label>
-          <textarea 
-            required
-            rows={3}
-            placeholder="Describe el problema detalladamente..."
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none resize-none"
-            value={formData.description}
-            onChange={e => setFormData({...formData, description: e.target.value})}
-          ></textarea>
-        </div>
+          {/* DESCRIPCIÓN DETALLADA */}
+          <div className="bg-gray-800/50 rounded-2xl p-6 border border-gray-700">
+            <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider mb-4">Descripción Detallada</h3>
+            <textarea 
+              required
+              rows={4}
+              placeholder="Describe lo que está ocurriendo..."
+              className="w-full p-4 bg-gray-900/50 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
+              value={formData.description}
+              onChange={e => setFormData({...formData, description: e.target.value})}
+            />
+          </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Prioridad</label>
-          <select 
-            className="w-full p-3 border border-gray-300 rounded-lg bg-white"
-            value={formData.priority}
-            onChange={e => setFormData({...formData, priority: e.target.value as any})}
-          >
-            <option value="Baja">Baja</option>
-            <option value="Media">Media</option>
-            <option value="Alta">Alta</option>
-          </select>
-        </div>
+          {/* UBICACIÓN DEL SUCESO */}
+          <div className="bg-gray-800/50 rounded-2xl p-6 border border-gray-700">
+            <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider mb-4">Ubicación del Suceso</h3>
+            
+            <div className="bg-gray-900/50 rounded-lg p-4 mb-4 border border-gray-600">
+              <p className="text-xs text-gray-500 font-medium mb-1">Ubicación actual</p>
+              <p className="text-gray-100 font-mono text-sm">{locationDisplay}</p>
+            </div>
 
-        {/* Geolocalización Mejorada */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Ubicación (GPS) *</label>
-          <div className="space-y-2">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center justify-between">
+            <div className="grid grid-cols-2 gap-3 mb-4">
               <div>
-                <p className="text-sm font-medium text-gray-700">
-                  📍 {locationDisplay}
-                </p>
-                {formData.lat !== 0 && (
-                  <p className="text-xs text-green-600 mt-1">✓ Ubicación confirmada</p>
-                )}
+                <label className="text-xs text-gray-400 block mb-2">Municipio</label>
+                <select 
+                  className="w-full p-3 bg-gray-900/50 border border-gray-600 rounded-lg text-gray-100 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                  value={formData.municipio}
+                  onChange={e => setFormData({...formData, municipio: e.target.value})}
+                >
+                  <option value="Saltillo">Saltillo</option>
+                  <option value="Ramos Arizpe">Ramos Arizpe</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-gray-400 block mb-2">Colonia</label>
+                <input 
+                  type="text" 
+                  required 
+                  placeholder="Nombre de la colonia"
+                  className="w-full p-3 bg-gray-900/50 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-600 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                  value={formData.colonia}
+                  onChange={e => setFormData({...formData, colonia: e.target.value})}
+                />
               </div>
             </div>
-            
-            <button 
+
+            {/* Botón GPS */}
+            <button
               type="button"
               onClick={getLocation}
               disabled={geoLoading}
-              className="w-full flex items-center justify-center gap-2 bg-sky-600 text-white px-4 py-3 rounded-lg hover:bg-sky-700 transition-colors disabled:opacity-70 font-medium"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-500/10 border border-blue-500/30 hover:bg-blue-500/20 rounded-lg text-blue-400 font-medium transition-colors disabled:opacity-50"
             >
               {geoLoading ? (
                 <>
-                  <Loader size={18} className="animate-spin" />
-                  Obteniendo ubicación...
+                  <Loader className="w-4 h-4 animate-spin" />
+                  Obtener ubicación...
                 </>
               ) : (
                 <>
-                  <MapPin size={18} />
-                  Usar Mi Ubicación Actual
+                  <MapPin className="w-4 h-4" />
+                  Prescrigar GPS
                 </>
               )}
             </button>
+          </div>
 
-            <p className="text-xs text-gray-500 text-center">
-              Necesitas permitir acceso a ubicación en tu navegador
-            </p>
+          {/* Su reporte será validado... */}
+          <div className="flex gap-3 p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl">
+            <div className="text-blue-400 flex-shrink-0">ℹ️</div>
+            <p className="text-xs text-blue-300">Su reporte será validado por la comunidad antes de ser enviado a las autoridades.</p>
+          </div>
+
+          {/* Botón Enviar Reporte */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-green-500/20 disabled:shadow-none flex items-center justify-center gap-2 text-lg"
+          >
+            {loading ? (
+              <>
+                <Loader className="w-5 h-5 animate-spin" />
+                Enviando Reporte...
+              </>
+            ) : (
+              <>
+                <Send className="w-5 h-5" />
+                Enviar Reporte
+              </>
+            )}
+          </button>
+        </form>
+      </div>
+
+      {submitted && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100]">
+          <div className="text-center bg-gray-900 rounded-2xl p-8 border border-green-500/30 max-w-sm">
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center">
+                <Check className="w-8 h-8 text-green-500" />
+              </div>
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-2">¡Reporte Enviado!</h2>
+            <p className="text-gray-400">Tu reporte ha sido registrado exitosamente.</p>
+            <p className="text-sm text-gray-500 mt-4">Redirigiendo...</p>
           </div>
         </div>
-
-        <button 
-          type="submit" 
-          disabled={loading}
-          className="w-full bg-emerald-600 text-white font-semibold flex items-center justify-center gap-2 p-4 rounded-xl hover:bg-emerald-700 transition-colors disabled:opacity-70 mt-6"
-        >
-          {loading ? (
-            <>
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              Enviando...
-            </>
-          ) : (
-            <>
-              <Send size={20} />
-              Enviar Reporte
-            </>
-          )}
-        </button>
-
-        <p className="text-xs text-gray-500 text-center mt-2">
-          Los campos con * son obligatorios
-        </p>
-      </form>
+      )}
     </div>
   );
 }
+

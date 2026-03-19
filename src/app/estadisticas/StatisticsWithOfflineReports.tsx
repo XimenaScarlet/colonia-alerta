@@ -38,6 +38,10 @@ export function StatisticsWithOfflineReports({ serverStats }: any) {
     };
 
     countOfflineReports();
+    
+    // Auto-refresh cada 25 segundos
+    const interval = setInterval(countOfflineReports, 25000);
+    return () => clearInterval(interval);
   }, [serverStats.total]);
 
   if (!mounted) return null;

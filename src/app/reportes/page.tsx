@@ -63,6 +63,15 @@ export default function ReportesPage() {
 
   useEffect(() => {
     loadReports();
+    
+    // Auto-refresh cada 20 segundos si estamos online
+    const interval = setInterval(() => {
+      if (navigator.onLine) {
+        loadReports();
+      }
+    }, 20000);
+    
+    return () => clearInterval(interval);
   }, [tab, filters]);
 
   const loadReports = async () => {
