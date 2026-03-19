@@ -124,6 +124,16 @@ export const reportService = {
     const response = await fetch('/api/statistics');
     return response.json();
   },
+
+  // Votar por un reporte (apoyar)
+  async upvoteReport(id: string, localUserId?: string) {
+    const response = await fetch(`/api/reports/${id}/upvote`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ localUserId })
+    });
+    return response.json();
+  },
 };
 
 // Utilitario para obtener o crear ID de usuario

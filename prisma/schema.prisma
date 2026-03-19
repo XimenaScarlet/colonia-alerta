@@ -73,6 +73,9 @@ model Report {
   updatedAt   DateTime @updatedAt
   resolvedAt  DateTime? // Fecha cuando se marcó como resuelto
   
+  upvotes     Int      @default(0)
+  upvotedBy   String[] @default([]) // Array de IDs de usuario que han votado
+  
   user        User?     @relation(fields: [createdBy], references: [id], onDelete: SetNull)
   
   @@index([status])

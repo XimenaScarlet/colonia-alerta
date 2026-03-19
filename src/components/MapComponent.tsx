@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { reportService } from '@/lib/api-client';
@@ -169,43 +170,45 @@ export default function MapComponent() {
         />
         <LocationMarker />
 
-        {/* Marcadores de reportes */}
-        {reports.map((report) => (
-          <Marker
-            key={report.id}
-            position={[report.lat, report.lng]}
-            icon={getCategoryIcon(report.category)}
-          >
-            <Popup className="report-popup">
-              <div className="w-48 text-sm">
-                <h3 className="font-bold text-gray-900 mb-1">{report.title}</h3>
-                
-                <div className="space-y-1 mb-2 border-b pb-2">
-                  <div className="text-xs text-gray-600">
-                    <strong>Categoría:</strong> {report.category}
+        {/* Marcadores de reportes agrupados en burbujas */}
+        <MarkerClusterGroup chunkedLoading>
+          {reports.map((report) => (
+            <Marker
+              key={report.id}
+              position={[report.lat, report.lng]}
+              icon={getCategoryIcon(report.category)}
+            >
+              <Popup className="report-popup">
+                <div className="w-48 text-sm">
+                  <h3 className="font-bold text-gray-900 mb-1">{report.title}</h3>
+                  
+                  <div className="space-y-1 mb-2 border-b pb-2">
+                    <div className="text-xs text-gray-600">
+                      <strong>Categoría:</strong> {report.category}
+                    </div>
+                    <div className="text-xs text-gray-600">
+                      <strong>Ubicación:</strong> {report.colonia}, {report.municipio}
+                    </div>
+                    <div className="text-xs text-gray-600">
+                      <strong>Fecha:</strong>{' '}
+                      {new Date(report.createdAt).toLocaleDateString('es-MX')}
+                    </div>
                   </div>
-                  <div className="text-xs text-gray-600">
-                    <strong>Ubicación:</strong> {report.colonia}, {report.municipio}
-                  </div>
-                  <div className="text-xs text-gray-600">
-                    <strong>Fecha:</strong>{' '}
-                    {new Date(report.createdAt).toLocaleDateString('es-MX')}
+
+                  <p className="text-xs text-gray-500 mb-2 line-clamp-2">
+                    {report.description}
+                  </p>
+
+                  <div className={`text-xs font-medium px-2 py-1 rounded text-center ${getStatusBadgeColor(
+                    report.status
+                  )}`}>
+                    {report.status}
                   </div>
                 </div>
-
-                <p className="text-xs text-gray-500 mb-2 line-clamp-2">
-                  {report.description}
-                </p>
-
-                <div className={`text-xs font-medium px-2 py-1 rounded text-center ${getStatusBadgeColor(
-                  report.status
-                )}`}>
-                  {report.status}
-                </div>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+              </Popup>
+            </Marker>
+          ))}
+        </MarkerClusterGroup>
       </MapContainer>
     </div>
   );

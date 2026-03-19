@@ -25,6 +25,8 @@ interface Report {
   createdAt: string;
   createdBy?: string;
   synced?: boolean;
+  upvotes?: number;
+  upvotedBy?: string[];
 }
 
 export default function ReportesPage() {
@@ -100,6 +102,8 @@ export default function ReportesPage() {
           createdAt: r.datetime,
           createdBy: localUserId,
           synced: r.synced,
+          upvotes: 0,
+          upvotedBy: []
         }));
         
         // Aplicar filtros locales simples
@@ -158,8 +162,56 @@ export default function ReportesPage() {
     setReportToDelete(id);
   };
 
+  const handleUpvote = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    
+    // Validar si es local (offline) que no intente apoyarlo si aún no sube
+    const report = reports.find(r => r.id === id);
+    if (!navigator.onLine || report?.synced === false) {
+      notificationService.sendError('Sin Conexión', 'Necesitas internet para respaldar este reporte.');
+      return;
+    }
+    
+    // Actualización optimista UI
+    setReports(prev => prev.map(r => {
+      if (r.id === id) {
+        return {
+          ...r,
+          upvotes: (r.upvotes || 0) + 1,
+          upvotedBy: [...(r.upvotedBy || []), authUserId || localUserId]
+        };
+      }
+      return r;
+    }));
+
+    try {
+      const response = await reportService.upvoteReport(id, localUserId);
+      if (!response.success) {
+        throw new Error(response.error);
+      }
+    } catch (error) {
+      // Revertir optimismo
+      setReports(prev => prev.map(r => {
+        if (r.id === id) {
+          return {
+            ...r,
+            upvotes: Math.max((r.upvotes || 0) - 1, 0),
+            upvotedBy: (r.upvotedBy || []).filter(u => u !== (authUserId || localUserId))
+          };
+        }
+        return r;
+      }));
+      alert('Error: ' + (error as Error).message);
+    }
+  };
+
   const handleCardClick = (report: Report) => {
     setSelectedReport(report);
+  };
+
+  const getWhatsAppUrl = (report: Report) => {
+    const text = `🚨 ¡Atención vecinos! Acabo de reportar un/a ${report.category} en ${report.colonia}, ${report.municipio}. Manténganse alerta. Ver más: https://colonia-alerta.vercel.app/mapa?lat=${report.lat}&lng=${report.lng}`;
+    return `https://wa.me/?text=${encodeURIComponent(text)}`;
   };
 
   const getStatusColor = (status: string) => {
@@ -377,8 +429,19 @@ export default function ReportesPage() {
                   <div className="text-gray-600 font-mono text-[10px] bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100">
                     {report.lat.toFixed(4)}, {report.lng.toFixed(4)}
                   </div>
-                  <div className="text-sky-600 font-medium text-xs flex items-center gap-1 group-hover:underline">
-                    <Map size={12} /> Ver info
+                  
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={(e) => handleUpvote(e, report.id)}
+                      disabled={report.upvotedBy?.includes(authUserId || localUserId)}
+                      className="text-emerald-600 font-medium text-xs flex items-center gap-1 hover:bg-emerald-50 px-2 py-1 rounded transition disabled:opacity-50 disabled:grayscale"
+                      title="Respaldar problema"
+                    >
+                      👍 {report.upvotes || 0}
+                    </button>
+                    <div className="text-sky-600 font-medium text-xs flex items-center gap-1 group-hover:underline py-1">
+                      <Map size={12} /> Ver
+                    </div>
                   </div>
                 </div>
               </div>
@@ -424,7 +487,7 @@ export default function ReportesPage() {
                 {selectedReport.description}
               </p>
               
-              <div className="bg-gray-50 rounded-xl p-3 text-xs space-y-2 border border-gray-100">
+              <div className="bg-gray-50 rounded-xl p-3 text-xs space-y-2 border border-gray-100 mb-4">
                 <div className="flex items-start gap-2">
                   <MapPin size={14} className="text-gray-400 mt-0.5" />
                   <span className="text-gray-600">{selectedReport.colonia}, {selectedReport.municipio}</span>
@@ -433,6 +496,34 @@ export default function ReportesPage() {
                   <Clock size={14} className="text-gray-400" />
                   <span className="text-gray-600">Fecha: {new Date(selectedReport.createdAt).toLocaleDateString('es-MX')}</span>
                 </div>
+              </div>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleUpvote(e as any, selectedReport.id);
+                    setSelectedReport({
+                      ...selectedReport,
+                      upvotes: (selectedReport.upvotes || 0) + 1,
+                      upvotedBy: [...(selectedReport.upvotedBy || []), authUserId || localUserId]
+                    });
+                  }}
+                  disabled={selectedReport.upvotedBy?.includes(authUserId || localUserId)}
+                  className="flex-1 py-3 px-4 rounded-xl font-bold bg-white text-emerald-600 border border-emerald-200 hover:bg-emerald-50 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  👍 Respaldar ({selectedReport.upvotes || 0})
+                </button>
+                
+                <a 
+                  href={getWhatsAppUrl(selectedReport)}
+                  onClick={(e) => e.stopPropagation()}
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex-1 py-3 px-4 rounded-xl font-bold text-white bg-green-500 hover:bg-green-600 transition-colors shadow-md shadow-green-200 flex items-center justify-center gap-2"
+                >
+                  📱 Compartir
+                </a>
               </div>
             </div>
           </div>
