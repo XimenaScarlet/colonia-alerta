@@ -41,8 +41,6 @@ export default function CreateReportPage() {
     title: '',
     description: '',
     category: '',
-    municipio: 'Saltillo',
-    colonia: '',
     priority: 'Media' as const,
     lat: 0,
     lng: 0,
@@ -116,10 +114,6 @@ export default function CreateReportPage() {
       alert('Por favor selecciona una categoría');
       return;
     }
-    if (!formData.colonia.trim()) {
-      alert('Por favor ingresa la colonia');
-      return;
-    }
     if (!formData.description.trim()) {
       alert('Por favor ingresa una descripción');
       return;
@@ -139,8 +133,8 @@ export default function CreateReportPage() {
         title: formData.title,
         description: formData.description,
         category: formData.category,
-        municipio: formData.municipio,
-        colonia: formData.colonia,
+        municipio: 'Saltillo',
+        colonia: '',
         lat: formData.lat,
         lng: formData.lng,
         priority: formData.priority,
@@ -158,14 +152,21 @@ export default function CreateReportPage() {
             
             // También guardar en Dexie para sincronización rápida
             await db.reports.add({
-              ...formData,
+              title: formData.title,
+              description: formData.description,
+              category: formData.category,
+              municipio: 'Saltillo',
+              colonia: '',
+              lat: formData.lat,
+              lng: formData.lng,
+              priority: formData.priority,
               photoUrl: photoPreview || undefined,
               datetime: new Date().toISOString(),
               status: 'Pendiente',
               synced: true
             });
 
-            notificationService.sendReportCreated(formData.title, formData.category, formData.colonia);
+            notificationService.sendReportCreated(formData.title, formData.category, '');
           } else {
             throw new Error(response.error || 'Error al crear reporte');
           }
@@ -173,7 +174,14 @@ export default function CreateReportPage() {
           console.error('Error saving to API:', error);
           // Fallback a Dexie si falla API
           await db.reports.add({
-            ...formData,
+            title: formData.title,
+            description: formData.description,
+            category: formData.category,
+            municipio: 'Saltillo',
+            colonia: '',
+            lat: formData.lat,
+            lng: formData.lng,
+            priority: formData.priority,
             photoUrl: photoPreview || undefined,
             datetime: new Date().toISOString(),
             status: 'Pendiente',
@@ -184,7 +192,14 @@ export default function CreateReportPage() {
       } else {
         // Sin conexión, guardar en Dexie
         await db.reports.add({
-          ...formData,
+          title: formData.title,
+          description: formData.description,
+          category: formData.category,
+          municipio: 'Saltillo',
+          colonia: '',
+          lat: formData.lat,
+          lng: formData.lng,
+          priority: formData.priority,
           photoUrl: photoPreview || undefined,
           datetime: new Date().toISOString(),
           status: 'Pendiente',
@@ -205,173 +220,155 @@ export default function CreateReportPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 pb-24">
-      <div className="max-w-2xl mx-auto p-4">
+      <div className="max-w-6xl mx-auto p-4">
         {/* Header */}
         <div className="mb-8 pt-4">
           <h1 className="text-4xl font-bold text-white mb-2">Nuevo Reporte</h1>
           <p className="text-gray-400">Su voz es el primer paso para mejorar nuestra comunidad. Complete los detalles a continuación para informar una incidencia de manera precisa.</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="grid md:grid-cols-2 gap-6">
           
-          {/* EVIDENCIA VISUAL */}
-          <div className="bg-gray-800/50 rounded-2xl p-6 border border-gray-700">
-            <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider mb-4">Evidencia Visual</h3>
-            {photoPreview ? (
-              <div className="relative w-full aspect-square rounded-xl overflow-hidden mb-4 bg-gray-900">
-                <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
-                <button 
-                  type="button"
-                  onClick={() => setPhotoPreview(null)}
-                  className="absolute top-3 right-3 bg-red-500/80 hover:bg-red-600 text-white p-2.5 rounded-full backdrop-blur-sm"
-                >
-                  ✕
-                </button>
-              </div>
-            ) : (
-              <label className="flex flex-col items-center justify-center w-full aspect-square rounded-xl cursor-pointer bg-gray-900/50 border-2 border-dashed border-gray-600 hover:border-blue-500/50 transition-all group">
-                <div className="flex flex-col items-center justify-center py-12">
-                  <div className="bg-blue-500/10 p-4 rounded-xl mb-3 group-hover:bg-blue-500/20 transition-colors">
-                    <Camera className="w-10 h-10 text-blue-400" />
-                  </div>
-                  <p className="text-sm text-gray-300 font-medium">Subir foto o vídeo</p>
-                  <p className="text-xs text-gray-500 mt-1">Arrastra o haz clic</p>
+          {/* COLUMNA IZQUIERDA - EVIDENCIA VISUAL */}
+          <div>
+            <div className="bg-gray-800/50 rounded-2xl p-6 border border-gray-700 sticky top-20">
+              <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider mb-4">Evidencia Visual</h3>
+              {photoPreview ? (
+                <div className="relative rounded-xl overflow-hidden mb-4 bg-gray-900 aspect-square md:aspect-auto md:h-96">
+                  <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
+                  <button 
+                    type="button"
+                    onClick={() => setPhotoPreview(null)}
+                    className="absolute top-3 right-3 bg-red-500/80 hover:bg-red-600 text-white p-2.5 rounded-full backdrop-blur-sm"
+                  >
+                    ✕
+                  </button>
                 </div>
-                <input 
-                  type="file" 
-                  className="hidden" 
-                  accept="image/*,video/*" 
-                  capture="environment" 
-                  onChange={handlePhotoCapture}
-                />
-              </label>
-            )}
+              ) : (
+                <label className="flex flex-col items-center justify-center rounded-xl cursor-pointer bg-gray-900/50 border-2 border-dashed border-gray-600 hover:border-blue-500/50 transition-all group aspect-square md:aspect-auto md:h-96">
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <div className="bg-blue-500/10 p-4 rounded-xl mb-3 group-hover:bg-blue-500/20 transition-colors">
+                      <Camera className="w-10 h-10 text-blue-400" />
+                    </div>
+                    <p className="text-sm text-gray-300 font-medium">Subir foto o vídeo</p>
+                    <p className="text-xs text-gray-500 mt-1">Arrastra o haz clic</p>
+                  </div>
+                  <input 
+                    type="file" 
+                    className="hidden" 
+                    accept="image/*,video/*" 
+                    capture="environment" 
+                    onChange={handlePhotoCapture}
+                  />
+                </label>
+              )}
+            </div>
           </div>
 
-          {/* CATEGORÍA DEL INCIDENTE */}
-          <div className="bg-gray-800/50 rounded-2xl p-6 border border-gray-700">
-            <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider mb-4">Categoría del Incidente</h3>
-            <select 
-              required
-              className="w-full p-4 bg-gray-900/50 border border-gray-600 rounded-lg text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-base"
-              value={formData.category}
-              onChange={e => setFormData({...formData, category: e.target.value})}
-            >
-              <option value="">Infraestructura Vial</option>
-              <option value="Bache">🕳️ Bache</option>
-              <option value="Luminaria Dañada">💡 Luminaria Dañada</option>
-              <option value="Basura Acumulada">🗑️ Basura Acumulada</option>
-              <option value="Fuga de Agua">💧 Fuga de Agua</option>
-              <option value="Inseguridad">⚠️ Inseguridad</option>
-              <option value="Otro">📍 Otro</option>
-            </select>
-          </div>
-
-          {/* TÍTULO BREVE */}
-          <div className="bg-gray-800/50 rounded-2xl p-6 border border-gray-700">
-            <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider mb-4">Título Breve</h3>
-            <input 
-              type="text" 
-              required 
-              placeholder="Ej: Socavón en Calle Principal"
-              className="w-full p-4 bg-gray-900/50 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-              value={formData.title}
-              onChange={e => setFormData({...formData, title: e.target.value})}
-            />
-          </div>
-
-          {/* DESCRIPCIÓN DETALLADA */}
-          <div className="bg-gray-800/50 rounded-2xl p-6 border border-gray-700">
-            <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider mb-4">Descripción Detallada</h3>
-            <textarea 
-              required
-              rows={4}
-              placeholder="Describe lo que está ocurriendo..."
-              className="w-full p-4 bg-gray-900/50 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
-              value={formData.description}
-              onChange={e => setFormData({...formData, description: e.target.value})}
-            />
-          </div>
-
-          {/* UBICACIÓN DEL SUCESO */}
-          <div className="bg-gray-800/50 rounded-2xl p-6 border border-gray-700">
-            <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider mb-4">Ubicación del Suceso</h3>
+          {/* COLUMNA DERECHA - DATOS */}
+          <div className="space-y-6">
             
-            <div className="bg-gray-900/50 rounded-lg p-4 mb-4 border border-gray-600">
-              <p className="text-xs text-gray-500 font-medium mb-1">Ubicación actual</p>
-              <p className="text-gray-100 font-mono text-sm">{locationDisplay}</p>
+            {/* CATEGORÍA DEL INCIDENTE */}
+            <div className="bg-gray-800/50 rounded-2xl p-6 border border-gray-700">
+              <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider mb-4">Categoría del Incidente</h3>
+              <select 
+                required
+                className="w-full p-4 bg-gray-900/50 border border-gray-600 rounded-lg text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-base"
+                value={formData.category}
+                onChange={e => setFormData({...formData, category: e.target.value})}
+              >
+                <option value="">Infraestructura Vial</option>
+                <option value="Bache">🕳️ Bache</option>
+                <option value="Luminaria Dañada">💡 Luminaria Dañada</option>
+                <option value="Basura Acumulada">🗑️ Basura Acumulada</option>
+                <option value="Fuga de Agua">💧 Fuga de Agua</option>
+                <option value="Inseguridad">⚠️ Inseguridad</option>
+                <option value="Otro">📍 Otro</option>
+              </select>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <div>
-                <label className="text-xs text-gray-400 block mb-2">Municipio</label>
-                <select 
-                  className="w-full p-3 bg-gray-900/50 border border-gray-600 rounded-lg text-gray-100 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
-                  value={formData.municipio}
-                  onChange={e => setFormData({...formData, municipio: e.target.value})}
-                >
-                  <option value="Saltillo">Saltillo</option>
-                  <option value="Ramos Arizpe">Ramos Arizpe</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-xs text-gray-400 block mb-2">Colonia</label>
-                <input 
-                  type="text" 
-                  required 
-                  placeholder="Nombre de la colonia"
-                  className="w-full p-3 bg-gray-900/50 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-600 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
-                  value={formData.colonia}
-                  onChange={e => setFormData({...formData, colonia: e.target.value})}
-                />
-              </div>
+            {/* TÍTULO BREVE */}
+            <div className="bg-gray-800/50 rounded-2xl p-6 border border-gray-700">
+              <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider mb-4">Título Breve</h3>
+              <input 
+                type="text" 
+                required 
+                placeholder="Ej: Socavón en Calle Principal"
+                className="w-full p-4 bg-gray-900/50 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                value={formData.title}
+                onChange={e => setFormData({...formData, title: e.target.value})}
+              />
             </div>
 
-            {/* Botón GPS */}
+            {/* DESCRIPCIÓN DETALLADA */}
+            <div className="bg-gray-800/50 rounded-2xl p-6 border border-gray-700">
+              <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider mb-4">Descripción Detallada</h3>
+              <textarea 
+                required
+                rows={4}
+                placeholder="Describe lo que está ocurriendo..."
+                className="w-full p-4 bg-gray-900/50 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
+                value={formData.description}
+                onChange={e => setFormData({...formData, description: e.target.value})}
+              />
+            </div>
+
+            {/* UBICACIÓN DEL SUCESO */}
+            <div className="bg-gray-800/50 rounded-2xl p-6 border border-gray-700">
+              <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider mb-4">Ubicación del Suceso</h3>
+              
+              <div className="bg-gray-900/50 rounded-lg p-4 mb-4 border border-gray-600">
+                <p className="text-xs text-gray-500 font-medium mb-1">Ubicación actual</p>
+                <p className="text-gray-100 font-mono text-sm">{locationDisplay}</p>
+              </div>
+
+              {/* Botón GPS */}
+              <button
+                type="button"
+                onClick={getLocation}
+                disabled={geoLoading}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-500/10 border border-blue-500/30 hover:bg-blue-500/20 rounded-lg text-blue-400 font-medium transition-colors disabled:opacity-50"
+              >
+                {geoLoading ? (
+                  <>
+                    <Loader className="w-4 h-4 animate-spin" />
+                    Obtener ubicación...
+                  </>
+                ) : (
+                  <>
+                    <MapPin className="w-4 h-4" />
+                    Prescrigar GPS
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Su reporte será validado... */}
+            <div className="flex gap-3 p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl">
+              <div className="text-blue-400 flex-shrink-0">ℹ️</div>
+              <p className="text-xs text-blue-300">Su reporte será validado por la comunidad antes de ser enviado a las autoridades.</p>
+            </div>
+
+            {/* Botón Enviar Reporte */}
             <button
-              type="button"
-              onClick={getLocation}
-              disabled={geoLoading}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-500/10 border border-blue-500/30 hover:bg-blue-500/20 rounded-lg text-blue-400 font-medium transition-colors disabled:opacity-50"
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-green-500/20 disabled:shadow-none flex items-center justify-center gap-2 text-lg"
             >
-              {geoLoading ? (
+              {loading ? (
                 <>
-                  <Loader className="w-4 h-4 animate-spin" />
-                  Obtener ubicación...
+                  <Loader className="w-5 h-5 animate-spin" />
+                  Enviando Reporte...
                 </>
               ) : (
                 <>
-                  <MapPin className="w-4 h-4" />
-                  Prescrigar GPS
+                  <Send className="w-5 h-5" />
+                  Enviar Reporte
                 </>
               )}
             </button>
           </div>
 
-          {/* Su reporte será validado... */}
-          <div className="flex gap-3 p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl">
-            <div className="text-blue-400 flex-shrink-0">ℹ️</div>
-            <p className="text-xs text-blue-300">Su reporte será validado por la comunidad antes de ser enviado a las autoridades.</p>
-          </div>
-
-          {/* Botón Enviar Reporte */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-green-500/20 disabled:shadow-none flex items-center justify-center gap-2 text-lg"
-          >
-            {loading ? (
-              <>
-                <Loader className="w-5 h-5 animate-spin" />
-                Enviando Reporte...
-              </>
-            ) : (
-              <>
-                <Send className="w-5 h-5" />
-                Enviar Reporte
-              </>
-            )}
-          </button>
         </form>
       </div>
 
