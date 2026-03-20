@@ -135,7 +135,39 @@ export async function DELETE(
   context: { params: Promise<Params> }
 ) {
   try {
+    const session = await getServerSession(authOptions);
     const { id } = await context.params;
+
+    // Validar autenticación
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { success: false, error: 'Debes iniciar sesión' },
+        { status: 401 }
+      );
+    }
+
+    // Obtener el reporte actual
+    const currentReport = await prisma.report.findUnique({
+      where: { id },
+    });
+
+    if (!currentReport) {
+      return NextResponse.json(
+        { success: false, error: 'Reporte no encontrado' },
+        { status: 404 }
+      );
+    }
+
+    // Validar permisos: solo admin o creador del reporte
+    const isAdmin = session.user.role === 'admin';
+    const isCreator = currentReport.createdBy === session.user.id;
+
+    if (!isAdmin && !isCreator) {
+      return NextResponse.json(
+        { success: false, error: 'No tienes permiso para eliminar este reporte' },
+        { status: 403 }
+      );
+    }
 
     await prisma.report.delete({
       where: { id },
