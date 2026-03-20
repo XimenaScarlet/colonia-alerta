@@ -82,10 +82,10 @@ export async function POST(request: NextRequest) {
       photoB64,
     } = body;
 
-    // Validaciones básicas
-    if (!title || !description || !category || !municipio || !colonia) {
+    // Validaciones básicas - Permitir colonia vacía ya que el frontend aún no la captura
+    if (!title || !description || !category || !municipio) {
       return NextResponse.json(
-        { success: false, error: 'Faltan campos requeridos' },
+        { success: false, error: 'Faltan campos requeridos: título, descripción, categoría y municipio' },
         { status: 400 }
       );
     }

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { Camera, MapPin, Send, Loader, Check } from 'lucide-react';
 import { db } from '@/lib/db';
-import { reportService, notificationService } from '@/lib/api-client';
+import { reportService, notificationService, userService } from '@/lib/api-client';
 
 export const dynamic = 'force-dynamic';
 
@@ -238,7 +238,8 @@ export default function CreateReportPage() {
                 photoUrl: photoPreview || undefined,
                 datetime: new Date().toISOString(),
                 status: 'Pendiente',
-                synced: true
+                synced: true,
+                createdBy: session?.user?.id || userService.getUserId()
               });
 
               notificationService.sendReportCreated(formData.title, formData.category, '');
@@ -267,7 +268,8 @@ export default function CreateReportPage() {
               photoUrl: photoPreview || undefined,
               datetime: new Date().toISOString(),
               status: 'Pendiente',
-              synced: false
+              synced: false,
+              createdBy: session?.user?.id || userService.getUserId()
             });
             notificationService.sendReportSaved(formData.category, true);
             setSubmitted(true);
@@ -289,7 +291,8 @@ export default function CreateReportPage() {
             photoUrl: photoPreview || undefined,
             datetime: new Date().toISOString(),
             status: 'Pendiente',
-            synced: false
+            synced: false,
+            createdBy: session?.user?.id || userService.getUserId()
           });
 
           notificationService.sendReportSaved(formData.category, true);

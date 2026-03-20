@@ -14,6 +14,7 @@ export interface Report {
   priority: 'Baja' | 'Media' | 'Alta';
   status: 'Pendiente' | 'En Proceso' | 'Resuelto';
   synced: boolean;
+  createdBy?: string;
 }
 
 const db = new Dexie('ColoniaAlertaDB') as Dexie & {
@@ -21,7 +22,7 @@ const db = new Dexie('ColoniaAlertaDB') as Dexie & {
 };
 
 db.version(1).stores({
-  reports: '++id, category, municipio, colonia, status, synced' // Primary key and indexed props
+  reports: '++id, category, municipio, colonia, status, synced, createdBy' // Primary key and indexed props
 });
 
 export { db };

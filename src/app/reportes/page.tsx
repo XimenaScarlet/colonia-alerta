@@ -87,23 +87,29 @@ export default function ReportesPage() {
       };
       
       console.log('Cargando reportes con params:', params);
-      const response = await reportService.getReports(params);
-      console.log('Respuesta del API:', response);
-
-      if (response && response.success) {
-        console.log('Reportes cargados:', response.data);
-        setReports(Array.isArray(response.data) ? response.data : []);
-      } else {
-        throw new Error(response?.error || 'Respuesta inválida');
-      }
-    } catch (error) {
-      console.error('Error loading reports:', error);
       
-      // Fallback a reporte local (Offline PWA)
+      let apiReports: Report[] = [];
+      let isOnline = navigator.onLine;
+
+      // 1. Intentar cargar desde API si hay conexión
+      if (isOnline) {
+        try {
+          const response = await reportService.getReports(params);
+          if (response && response.success) {
+            apiReports = Array.isArray(response.data) ? response.data : [];
+          }
+        } catch (apiError) {
+          console.error('Error al llamar al API:', apiError);
+          isOnline = false;
+        }
+      }
+
+      // 2. Cargar reportes locales desde Dexie (PWA Offline storage)
+      let localReports: Report[] = [];
       try {
         const { db } = await import('@/lib/db');
         const offlineReports = await db.reports.toArray();
-        const formattedLocal = offlineReports.map(r => ({
+        localReports = offlineReports.map(r => ({
           id: r.id?.toString() || Math.random().toString(),
           title: r.title,
           description: r.description,
@@ -114,30 +120,46 @@ export default function ReportesPage() {
           lat: r.lat,
           lng: r.lng,
           createdAt: r.datetime,
-          createdBy: localUserId,
+          createdBy: localUserId, // Por simplicidad localUserId identifica al dueño local
           synced: r.synced,
           upvotes: 0,
           upvotedBy: []
         }));
-        
-        // Aplicar filtros locales simples
-        let filtered = formattedLocal;
-        if (filters.category) filtered = filtered.filter(r => r.category === filters.category);
-        if (filters.status) filtered = filtered.filter(r => r.status === filters.status);
-        if (filters.municipio) filtered = filtered.filter(r => r.municipio === filters.municipio);
-        
-        if (filtered.length > 0) {
-          setReports(filtered);
-        } else {
-          setReports([]);
-          if (!navigator.onLine) {
-            notificationService.sendError('Sin Conexión', 'Estás offline y no hay reportes filtrados localmente.');
-          }
+
+        // Aplicar filtros locales equivalentes a los del API
+        if (tab === 'mios') {
+          // Ya que localUserId es el dueño local, todos son "míos" en el contexto local si no hay auth
+          // Si hay auth, dependemos de si fueron creados con ese ID
+          localReports = localReports.filter(r => r.createdBy === localUserId);
         }
+        if (filters.category) localReports = localReports.filter(r => r.category === filters.category);
+        if (filters.status) localReports = localReports.filter(r => r.status === filters.status);
+        if (filters.municipio) localReports = localReports.filter(r => r.municipio === filters.municipio);
+        if (filters.colonia) localReports = localReports.filter(r => r.colonia.toLowerCase().includes(filters.colonia.toLowerCase()));
       } catch (dbError) {
-        notificationService.sendError('Error al Cargar Reportes', 'Estás desconectado y falló la carga local.');
-        setReports([]);
+        console.error('Error al cargar base de datos local:', dbError);
       }
+
+      // 3. Mezclar y de-duplicar
+      // Estrategia: Mostrar todos los del API + los locales que NO están sincronizados
+      // (Los locales sincronizados ya deberían estar en el API)
+      const unsyncedLocal = localReports.filter(r => !r.synced);
+      
+      // Combinar ambos conjuntos
+      const combined = [...apiReports, ...unsyncedLocal];
+      
+      // Ordenar por fecha descendente
+      combined.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+      setReports(combined);
+
+      if (!isOnline && combined.length === 0) {
+        notificationService.sendError('Sin Conexión', 'No se pudieron cargar reportes y no hay datos locales.');
+      }
+    } catch (error) {
+      console.error('Error general en loadReports:', error);
+      notificationService.sendError('Error', 'Hubo un problema al cargar los reportes');
+      setReports([]);
     } finally {
       setLoading(false);
     }
