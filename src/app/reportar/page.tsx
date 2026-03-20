@@ -18,15 +18,27 @@ export default function CreateReportPage() {
   const [submitted, setSubmitted] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [pageLoading, setPageLoading] = useState(true);
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    category: '',
+    priority: 'Media' as const,
+    lat: 0,
+    lng: 0,
+  });
+  const [locationDisplay, setLocationDisplay] = useState('No establecida');
   
   // Redirigir a login si no hay sesión
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/auth/login?callbackUrl=/reportar');
+    } else if (status === 'authenticated') {
+      // Una vez autenticado, marcar que ya no está cargando
+      setPageLoading(false);
     }
   }, [status, router]);
 
-  if (status === 'loading' || pageLoading) {
+  if (status === 'loading') {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-900">
         <div className="text-center">
@@ -37,20 +49,9 @@ export default function CreateReportPage() {
     );
   }
 
-  if (!session) {
+  if (status === 'unauthenticated' || !session) {
     return null;
   }
-  
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    category: '',
-    priority: 'Media' as const,
-    lat: 0,
-    lng: 0,
-  });
-
-  const [locationDisplay, setLocationDisplay] = useState('No establecida');
 
   const handlePhotoCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -105,19 +106,13 @@ export default function CreateReportPage() {
           console.log('Error loading saved location');
         }
       }
-    }
-  }, []);
-
-  // Cargar reporte si está en modo edición
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
+      
+      // Cargar reporte si está en modo edición
       const searchParams = new URLSearchParams(window.location.search);
       const edit = searchParams.get('edit');
       if (edit) {
         setEditId(edit);
         loadReportForEditing(edit);
-      } else {
-        setPageLoading(false);
       }
     }
   }, []);
@@ -141,8 +136,6 @@ export default function CreateReportPage() {
       console.error('Error loading report:', error);
       alert('No se pudo cargar el reporte');
       router.push('/mapa');
-    } finally {
-      setPageLoading(false);
     }
   };
 
