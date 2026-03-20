@@ -218,7 +218,10 @@ export default function CreateReportPage() {
         if (isOnline) {
           // Si hay conexión, enviar a BD directamente
           try {
+            console.log('Enviando reporte al API:', reportData);
             const response = await reportService.createReport(reportData);
+            console.log('Respuesta del API:', response);
+            
             if (response.success) {
               savedReport = response.data;
               
@@ -248,6 +251,9 @@ export default function CreateReportPage() {
             }
           } catch (error) {
             console.error('Error saving to API:', error);
+            // Mostrar error detallado al usuario
+            alert(`Error al crear reporte: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+            setLoading(false);
             // Fallback a Dexie si falla API
             await db.reports.add({
               title: formData.title,

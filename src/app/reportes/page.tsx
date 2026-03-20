@@ -72,24 +72,29 @@ export default function ReportesPage() {
     }, 20000);
     
     return () => clearInterval(interval);
-  }, [tab, filters]);
+  }, [tab, filters, authUserId]);
 
   const loadReports = async () => {
     setLoading(true);
     try {
-      const response = await reportService.getReports({
+      const params = {
         limit: 100,
         ...(tab === 'mios' && { createdBy: authUserId || localUserId }),
         ...(filters.category && { category: filters.category }),
         ...(filters.status && { status: filters.status }),
         ...(filters.municipio && { municipio: filters.municipio }),
         ...(filters.colonia && { colonia: filters.colonia }),
-      });
+      };
+      
+      console.log('Cargando reportes con params:', params);
+      const response = await reportService.getReports(params);
+      console.log('Respuesta del API:', response);
 
       if (response && response.success) {
+        console.log('Reportes cargados:', response.data);
         setReports(Array.isArray(response.data) ? response.data : []);
       } else {
-        throw new Error('Respuesta inválida');
+        throw new Error(response?.error || 'Respuesta inválida');
       }
     } catch (error) {
       console.error('Error loading reports:', error);

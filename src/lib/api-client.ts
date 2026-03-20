@@ -19,8 +19,22 @@ export const reportService = {
     if (filters?.colonia) params.append('colonia', filters.colonia);
     if (filters?.createdBy) params.append('createdBy', filters.createdBy);
 
-    const response = await fetch(`/api/reports?${params.toString()}`);
-    return response.json();
+    try {
+      const url = `/api/reports?${params.toString()}`;
+      console.log('GET Reports URL:', url);
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log('Reports response:', data);
+      return data;
+    } catch (error) {
+      console.error('Error in getReports:', error);
+      throw error;
+    }
   },
 
   // Crear un nuevo reporte
@@ -35,12 +49,26 @@ export const reportService = {
     priority?: string;
     photoB64?: string;
   }) {
-    const response = await fetch('/api/reports', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    return response.json();
+    try {
+      console.log('Creating report with data:', data);
+      const response = await fetch('/api/reports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`HTTP ${response.status}: ${errorData.error || response.statusText}`);
+      }
+      
+      const result = await response.json();
+      console.log('Report created successfully:', result);
+      return result;
+    } catch (error) {
+      console.error('Error creating report:', error);
+      throw error;
+    }
   },
 
   // Obtener un reporte por ID
