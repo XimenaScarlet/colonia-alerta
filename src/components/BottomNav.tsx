@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Map as MapIcon, PlusCircle, List, BarChart2 } from 'lucide-react';
+import { Home, Map as MapIcon, PlusCircle, List } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function BottomNav() {
@@ -15,7 +15,6 @@ export function BottomNav() {
     { href: '/mapa', label: 'Mapa', icon: MapIcon },
     { href: '/reportar', label: 'Reportar', icon: PlusCircle },
     { href: '/reportes', label: 'Reportes', icon: List },
-    { href: '/estadisticas', label: 'Estadísticas', icon: BarChart2 },
   ];
 
   return (

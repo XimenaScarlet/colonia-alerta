@@ -97,6 +97,40 @@ export default function ReportesPage() {
           const response = await reportService.getReports(params);
           if (response && response.success) {
             apiReports = Array.isArray(response.data) ? response.data : [];
+            
+            // --- NUEVO: Guardar reportes del API en caché local (Dexie) para offline ---
+            try {
+              const { db } = await import('@/lib/db');
+              // Mapear reportes del API al esquema local
+              const mapToLocal = apiReports.map(r => ({
+                // No asignamos ID numérico para que Dexie lo maneje o usemos uno consistente
+                // Pero para evitar duplicados, es mejor limpiar y reinsertar o usar bulkPut con una lógica de ID
+                title: r.title,
+                description: r.description,
+                category: r.category,
+                municipio: r.municipio,
+                colonia: r.colonia,
+                lat: r.lat,
+                lng: r.lng,
+                datetime: r.createdAt,
+                status: r.status as any,
+                synced: true, // Los que vienen del API ya están sincronizados
+                priority: 'Media' as any, // Valor por defecto
+                createdBy: r.createdBy
+              }));
+
+              // Para no saturar, podemos limpiar los ya sincronizados antes de meter los nuevos del API
+              // O simplemente añadir los nuevos. Aquí guardamos los del API como referencia offline.
+              // Solo guardamos si no estamos filtrando por "mis reportes" para tener un caché general
+              if (tab === 'todos' && !filters.category && !filters.municipio) {
+                // Limpiar reportes antiguos sincronizados para mantener caché fresco
+                await db.reports.where('synced').equals(1).delete();
+                await db.reports.bulkAdd(mapToLocal);
+              }
+            } catch (cacheError) {
+              console.error('Error al cachear reportes:', cacheError);
+            }
+            // --------------------------------------------------------------------------
           }
         } catch (apiError) {
           console.error('Error al llamar al API:', apiError);

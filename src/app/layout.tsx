@@ -5,7 +5,6 @@ import { BottomNav } from "@/components/BottomNav";
 import { Header } from "@/components/Header";
 import { SyncInitializer } from "@/components/SyncInitializer";
 import { AuthProvider } from "@/components/AuthProvider";
-import { CreateReportButton } from "@/components/CreateReportButton";
 
 // Import system fonts as fallbacks, or omit them
 
@@ -56,7 +55,6 @@ export default function RootLayout({
           <Header />
           <main className="min-h-[calc(100vh-7.5rem)]">{children}</main>
           <BottomNav />
-          <CreateReportButton />
         </AuthProvider>
       </body>
     </html>

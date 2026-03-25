@@ -1,25 +1,10 @@
 import Link from 'next/link';
-import { Map, PlusCircle, List, BarChart2, AlertCircle } from 'lucide-react';
+import { Map, PlusCircle, List, AlertCircle } from 'lucide-react';
 import { OfflineStatusBadge } from '@/components/OfflineStatusBadge';
-import { prisma } from '@/lib/prisma';
 
 export const dynamic = "force-dynamic";
 
-async function getStats() {
-  try {
-    const total = await prisma.report.count();
-    const resolved = await prisma.report.count({ where: { status: 'Resuelto' } });
-    const percentageResolved = total > 0 ? Math.round((resolved / total) * 100) : 0;
-    return { total, percentageResolved };
-  } catch (error) {
-    console.error('Error fetching stats:', error);
-    return { total: 0, percentageResolved: 0 };
-  }
-}
-
 export default async function Home() {
-  const { total, percentageResolved } = await getStats();
-
   return (
     <>
       {/* Welcome & Overview */}
@@ -29,16 +14,6 @@ export default async function Home() {
           <p className="text-gray-500 text-sm mb-4">
             Tu participación hace la diferencia en Saltillo y Ramos Arizpe.
           </p>
-          <div className="flex gap-4">
-            <div className="bg-sky-50 border border-sky-100 px-3 py-2 rounded-lg text-center backdrop-blur-sm">
-              <span className="block text-2xl font-bold text-sky-700">{total}</span>
-              <span className="text-[10px] text-sky-600 uppercase tracking-wide">Reportes Totales</span>
-            </div>
-            <div className="bg-emerald-50 border border-emerald-100 px-3 py-2 rounded-lg text-center backdrop-blur-sm">
-              <span className="block text-2xl font-bold text-emerald-700">{percentageResolved}%</span>
-              <span className="text-[10px] text-emerald-600 uppercase tracking-wide">Resueltos</span>
-            </div>
-          </div>
         </div>
         
         {/* Decorative background circle */}
@@ -48,49 +23,30 @@ export default async function Home() {
       {/* Quick Actions */}
       <section>
         <h3 className="text-lg font-semibold text-gray-800 mb-3 ml-1">Acciones Rápidas</h3>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <Link href="/reportar" className="bg-white border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center gap-2 hover:shadow-md transition-shadow">
             <div className="bg-sky-100 text-sky-600 p-3 rounded-full">
               <PlusCircle size={28} />
             </div>
-            <span className="font-medium text-gray-700">Crear Reporte</span>
+            <span className="text-xs font-medium text-gray-700">Reportar</span>
           </Link>
           <Link href="/mapa" className="bg-white border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center gap-2 hover:shadow-md transition-shadow">
             <div className="bg-indigo-100 text-indigo-600 p-3 rounded-full">
               <Map size={28} />
             </div>
-            <span className="font-medium text-gray-700">Ver Mapa</span>
+            <span className="text-xs font-medium text-gray-700">Mapa</span>
           </Link>
           <Link href="/reportes" className="bg-white border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center gap-2 hover:shadow-md transition-shadow">
             <div className="bg-emerald-100 text-emerald-600 p-3 rounded-full">
               <List size={28} />
             </div>
-            <span className="font-medium text-gray-700">Reportes</span>
-          </Link>
-          <Link href="/estadisticas" className="bg-white border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center gap-2 hover:shadow-md transition-shadow">
-            <div className="bg-orange-100 text-orange-600 p-3 rounded-full">
-              <BarChart2 size={28} />
-            </div>
-            <span className="font-medium text-gray-700">Estadísticas</span>
+            <span className="text-xs font-medium text-gray-700">Reportes</span>
           </Link>
         </div>
       </section>
 
       {/* Offline Sync Status */}
       <OfflineStatusBadge />
-      
-      {/* Educational Card */}
-      <section className="bg-slate-800 text-white rounded-2xl p-5 flex items-start gap-4 shadow-md items-center">
-        <div className="bg-slate-700 p-3 rounded-full flex-shrink-0">
-          <AlertCircle className="text-yellow-400" size={24} />
-        </div>
-        <div>
-          <h4 className="font-semibold text-sm mb-1">¿Sabías qué?</h4>
-          <p className="text-xs text-slate-300">
-            Puedes crear reportes incluso sin conexión a internet. Se enviarán automáticamente cuando recuperes la señal.
-          </p>
-        </div>
-      </section>
     </>
   );
 }
