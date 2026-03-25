@@ -28,15 +28,12 @@ export default function CreateReportPage() {
   });
   const [locationDisplay, setLocationDisplay] = useState('No establecida');
   
-  // Redirigir a login si no hay sesión
+  // Solo cargar página si está autenticado
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/auth/login?callbackUrl=/reportar');
-    } else if (status === 'authenticated') {
-      // Una vez autenticado, marcar que ya no está cargando
+    if (status === 'authenticated') {
       setPageLoading(false);
     }
-  }, [status, router]);
+  }, [status]);
 
   if (status === 'loading') {
     return (
@@ -50,7 +47,40 @@ export default function CreateReportPage() {
   }
 
   if (status === 'unauthenticated' || !session) {
-    return null;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-gray-800/50 backdrop-blur-xl rounded-3xl p-8 border border-gray-700 shadow-2xl text-center">
+          <div className="w-20 h-20 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-gray-700">
+            <Send className="w-10 h-10 text-blue-400 -rotate-12" />
+          </div>
+          <h2 className="text-3xl font-bold text-white mb-2">Acceso Requerido</h2>
+          <p className="text-gray-400 mb-8 leading-relaxed">
+            Para mantér nuestra comunidad segura y confiable, es necesario iniciar sesión para realizar reportes.
+          </p>
+          
+          <div className="space-y-4">
+            <button
+              onClick={() => router.push('/auth/login?callbackUrl=/reportar')}
+              className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-blue-500/20 text-lg"
+            >
+              Iniciar Sesión
+            </button>
+            <button
+              onClick={() => router.push('/auth/register?callbackUrl=/reportar')}
+              className="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-4 rounded-2xl transition-all border border-gray-600"
+            >
+              Crear Cuenta Nueva
+            </button>
+            <button
+              onClick={() => router.push('/mapa')}
+              className="w-full text-gray-500 hover:text-gray-300 text-sm font-medium pt-2"
+            >
+              Volver al Mapa
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const handlePhotoCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
