@@ -6,14 +6,16 @@ import { useSession } from 'next-auth/react';
 import dynamic from 'next/dynamic';
 import { CheckCircle, Clock, MapPin, Trash2, Map, WifiOff, CloudOff, X } from 'lucide-react';
 import { reportService, userService, notificationService } from '@/lib/api-client';
+import { db, type IncidentReport } from '@/lib/db';
 
 const MiniMap = dynamic(() => import('@/components/MiniMap'), { 
   ssr: false, 
   loading: () => <div className="w-full h-full bg-gray-100 animate-pulse flex items-center justify-center text-sm text-gray-500">Cargando mapa...</div> 
 });
 
-interface Report {
+interface UIReport {
   id: string;
+  serverId?: string;
   title: string;
   description: string;
   category: string;
@@ -32,9 +34,9 @@ interface Report {
 export default function ReportesPage() {
   const { data: session } = useSession();
   const [tab, setTab] = useState<'todos' | 'mios'>('todos');
-  const [reports, setReports] = useState<Report[]>([]);
+  const [reports, setReports] = useState<UIReport[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const [selectedReport, setSelectedReport] = useState<UIReport | null>(null);
   const [reportToDelete, setReportToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   
@@ -134,12 +136,12 @@ export default function ReportesPage() {
       }
 
       // 2. Cargar reportes locales desde Dexie (PWA Offline storage)
-      let localReports: Report[] = [];
+      let localReports: UIReport[] = [];
       try {
-        const { db } = await import('@/lib/db');
         const offlineReports = await db.reports.toArray();
-        localReports = offlineReports.map(r => ({
+        localReports = offlineReports.map((r: IncidentReport) => ({
           id: r.id?.toString() || Math.random().toString(),
+          serverId: r.serverId,
           title: r.title,
           description: r.description,
           category: r.category,

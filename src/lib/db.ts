@@ -1,5 +1,7 @@
 import Dexie, { type EntityTable } from 'dexie';
 
+export interface IncidentReport {
+  id?: number;
   serverId?: string;
   title: string;
   description: string;
@@ -17,7 +19,7 @@ import Dexie, { type EntityTable } from 'dexie';
 }
 
 const db = new Dexie('ColoniaAlertaDB') as Dexie & {
-  reports: EntityTable<Report, 'id'>;
+  reports: EntityTable<IncidentReport, 'id'>;
 };
 
 db.version(1).stores({

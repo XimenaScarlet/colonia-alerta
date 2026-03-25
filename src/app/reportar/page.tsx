@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { Camera, MapPin, Send, Loader, Check } from 'lucide-react';
-import { db } from '@/lib/db';
+import { db, type IncidentReport } from '@/lib/db';
 import { reportService, notificationService, userService } from '@/lib/api-client';
 
 export const dynamic = 'force-dynamic';
