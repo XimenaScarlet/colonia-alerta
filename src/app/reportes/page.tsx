@@ -167,6 +167,9 @@ export default function ReportesPage() {
       }
 
       // 3. Mezclar y de-duplicar
+      // Estrategia: Mostrar todos los del API + los locales que NO están sincronizados
+      const unsyncedLocal = localReports.filter(r => !r.synced);
+      
       // Combinar ambos conjuntos
       const combined: UIReport[] = [...apiReports, ...unsyncedLocal];
       
