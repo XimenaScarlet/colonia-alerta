@@ -1,7 +1,6 @@
 import Dexie, { type EntityTable } from 'dexie';
 
-export interface Report {
-  id?: number;
+  serverId?: string;
   title: string;
   description: string;
   category: string;
@@ -22,7 +21,7 @@ const db = new Dexie('ColoniaAlertaDB') as Dexie & {
 };
 
 db.version(1).stores({
-  reports: '++id, category, municipio, colonia, status, synced, createdBy' // Primary key and indexed props
+  reports: '++id, serverId, category, municipio, colonia, status, synced, createdBy' // Primary key and indexed props
 });
 
 export { db };

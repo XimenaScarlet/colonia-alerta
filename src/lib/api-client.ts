@@ -161,7 +161,7 @@ export const reportService = {
 
   // Eliminar un reporte
   async deleteReport(id: string) {
-    const response = await fetch(`/api/reports/${id}`, {
+    const response = await fetchWithTimeout(`/api/reports/${id}`, {
       method: 'DELETE',
     });
     return response.json();
@@ -184,7 +184,7 @@ export const reportService = {
 
   // Votar por un reporte (apoyar)
   async upvoteReport(id: string, localUserId?: string) {
-    const response = await fetch(`/api/reports/${id}/upvote`, {
+    const response = await fetchWithTimeout(`/api/reports/${id}/upvote`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ localUserId })
@@ -246,11 +246,15 @@ export const notificationService = {
   },
 
   send(title: string, options?: NotificationOptions) {
-    if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification(title, {
-        icon: '/icons/icon-192x192.png',
-        ...options,
-      });
+    try {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(title, {
+          icon: '/icons/icon-192x192.png',
+          ...options,
+        });
+      }
+    } catch (e) {
+      console.warn('Notification failed:', e);
     }
   },
 

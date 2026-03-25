@@ -99,7 +99,7 @@ export default function ReportesPage() {
               // Mapear reportes del API al esquema local
               const mapToLocal = apiReports.map(r => ({
                 // No asignamos ID numérico para que Dexie lo maneje o usemos uno consistente
-                // Pero para evitar duplicados, es mejor limpiar y reinsertar o usar bulkPut con una lógica de ID
+                serverId: r.id, // Guardar el ID real del servidor
                 title: r.title,
                 description: r.description,
                 category: r.category,
@@ -195,23 +195,35 @@ export default function ReportesPage() {
     
     setIsDeleting(true);
     try {
+      // 1. Intentar borrar del servidor si hay internet
       if (navigator.onLine) {
-        // Enviar al servidor si estamos online
-        await reportService.deleteReport(reportToDelete);
+        try {
+          await reportService.deleteReport(reportToDelete);
+        } catch (serverError) {
+          console.warn('Server delete failed, carrying on with local delete:', serverError);
+        }
       }
       
-      // Eliminar de base local (Dexie) por si acaso de manera silenciosa
+      // 2. Borrar de base local (Dexie) por ID o ServerID para ser infalibles
       try {
         const { db } = await import('@/lib/db');
-        await db.reports.where('id').equals(reportToDelete).delete();
-      } catch (e) {}
+        // Intentar borrar por ID numérico (local)
+        const numericId = parseInt(reportToDelete);
+        if (!isNaN(numericId)) {
+          await db.reports.delete(numericId);
+        }
+        // Intentar borrar por ServerID (string)
+        await db.reports.where('serverId').equals(reportToDelete).delete();
+      } catch (e) {
+        console.error('Dexie delete failed:', e);
+      }
 
-      // Actualizar UI
+      // 3. Actualizar UI de inmediato
       setReports(prev => prev.filter(r => r.id !== reportToDelete));
       notificationService.send('✅ Reporte Eliminado', { body: 'El reporte se borró exitosamente' });
     } catch (error) {
-      console.error('Error al eliminar', error);
-      alert('Hubo un problema al intentar eliminar el reporte.');
+      console.error('Error general al eliminar:', error);
+      // Solo alertar si falló TODO (UI no se pudo actualizar)
     } finally {
       setIsDeleting(false);
       setReportToDelete(null);

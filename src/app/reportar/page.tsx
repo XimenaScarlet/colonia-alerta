@@ -204,76 +204,76 @@ export default function CreateReportPage() {
         priority: formData.priority,
       };
 
+      const saveLocally = async (synced: boolean) => {
+        try {
+          await db.reports.add({
+            ...reportData,
+            datetime: new Date().toISOString(),
+            status: 'Pendiente',
+            synced: synced,
+            createdBy: session?.user?.id || userService.getUserId()
+          });
+          return true;
+        } catch (dexieError) {
+          console.error('CRITICAL: Dexie save failed', dexieError);
+          return false;
+        }
+      };
+
       if (editId) {
         // Modo edición
         try {
           const response = await reportService.updateReport(editId, reportData);
           if (response.success) {
             setSubmitted(true);
-            setTimeout(() => {
-              router.push('/mapa');
-            }, 1500);
+            setTimeout(() => router.push('/mapa'), 1500);
           } else {
-            throw new Error(response.error || 'Error al actualizar reporte');
+            throw new Error(response.error || 'Error al actualizar');
           }
         } catch (error) {
           console.error('Error updating report:', error);
-          alert('Error al actualizar reporte. Intenta nuevamente.');
+          alert('Error al actualizar reporte en el servidor.');
         }
       } else {
         // Modo creación
         if (isOnline) {
-          // Si hay conexión, enviar a BD directamente
           try {
-            console.log('Enviando reporte al API:', reportData);
+            console.log('Enviando reporte al API...');
             const response = await reportService.createReport(reportData);
-            console.log('Respuesta del API:', response);
             
             if (response.success) {
               notificationService.sendReportCreated(formData.title, formData.category, '');
               setSubmitted(true);
-              setTimeout(() => {
-                router.push('/reportes');
-              }, 1500);
+              setTimeout(() => router.push('/reportes'), 1500);
             } else {
-              throw new Error(response.error || 'Error al crear reporte');
+              throw new Error(response.error || 'Error en servidor');
             }
           } catch (error) {
-            console.error('Error saving to API:', error);
-            // Fallback a Dexie si falla API aunque estemos online
-            await db.reports.add({
-              ...reportData,
-              datetime: new Date().toISOString(),
-              status: 'Pendiente',
-              synced: false,
-              createdBy: session?.user?.id || userService.getUserId()
-            });
-            notificationService.sendReportSaved(formData.category, true);
-            setSubmitted(true);
-            setTimeout(() => {
-              router.push('/reportes');
-            }, 1500);
+            console.warn('API submission failed or timed out, fallback to local', error);
+            const saved = await saveLocally(false);
+            if (saved) {
+              notificationService.sendReportSaved(formData.category, true);
+              setSubmitted(true);
+              setTimeout(() => router.push('/reportes'), 1500);
+            } else {
+              throw new Error('No se pudo guardar ni en línea ni localmente.');
+            }
           }
         } else {
-          // Sin conexión, guardar en Dexie
-          await db.reports.add({
-            ...reportData,
-            datetime: new Date().toISOString(),
-            status: 'Pendiente',
-            synced: false,
-            createdBy: session?.user?.id || userService.getUserId()
-          });
-
-          notificationService.sendReportSaved(formData.category, true);
-          setSubmitted(true);
-          setTimeout(() => {
-            router.push('/reportes');
-          }, 1500);
+          // Sin conexión
+          const saved = await saveLocally(false);
+          if (saved) {
+            notificationService.sendReportSaved(formData.category, true);
+            setSubmitted(true);
+            setTimeout(() => router.push('/reportes'), 1500);
+          } else {
+            throw new Error('Error al guardar reporte localmente.');
+          }
         }
       }
-    } catch (error) {
-      console.error('Error al guardar reporte:', error);
-      alert('Hubo un problema al guardar el reporte. Por favor intenta de nuevo.');
+    } catch (error: any) {
+      console.error('Error in handleSubmit:', error);
+      alert(error.message || 'Error inesperado al guardar el reporte.');
     } finally {
       setLoading(false);
     }
