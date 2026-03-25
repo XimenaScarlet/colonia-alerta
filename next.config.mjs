@@ -9,15 +9,15 @@ const withPWA = withPWAInit({
     document: "/offline",
   },
   additionalManifestEntries: [
-    { url: "/", revision: "8" },
-    { url: "/home", revision: "8" },
-    { url: "/offline", revision: "8" },
-    { url: "/manifest.json", revision: "8" },
+    { url: "/", revision: "9" },
+    { url: "/home", revision: "9" },
+    { url: "/offline", revision: "9" },
+    { url: "/manifest.json", revision: "9" },
   ],
   runtimeCaching: [
     {
-      // Páginas esenciales: Intentar red pero servir caché inmediatamente si falla o tarda
-      urlPattern: ({ url }) => url.origin === self.location.origin && (url.pathname === "/" || url.pathname === "/home" || url.pathname === "/offline"),
+      // Páginas esenciales
+      urlPattern: /^\/(?:home|offline)?$/,
       handler: "StaleWhileRevalidate",
       options: {
         cacheName: "essential-pages",
@@ -28,8 +28,8 @@ const withPWA = withPWAInit({
       },
     },
     {
-      // Resto de páginas internas: StaleWhileRevalidate es mejor para PWA
-      urlPattern: ({ url }) => url.origin === self.location.origin && !url.pathname.startsWith('/api'),
+      // Resto de páginas internas
+      urlPattern: ({ url }) => !url.pathname.startsWith('/api') && !url.pathname.includes('.'),
       handler: "StaleWhileRevalidate",
       options: {
         cacheName: "pages-cache",

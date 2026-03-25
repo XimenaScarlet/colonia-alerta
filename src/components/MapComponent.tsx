@@ -91,20 +91,27 @@ export default function MapComponent() {
   const router = useRouter();
   const { data: session } = useSession();
   
-  const localUserId = userService.getUserId();
+  const [localUserId, setLocalUserId] = useState<string>('');
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const { data: session } = useSession();
+  
   const authUserId = session?.user?.id;
   
   const targetLat = searchParams.get('lat');
   const targetLng = searchParams.get('lng');
 
   useEffect(() => {
-    loadReports();
+    const id = userService.getUserId();
+    setLocalUserId(id);
+    loadReports(id);
     // Recargar reportes cada 30 segundos
-    const interval = setInterval(loadReports, 30000);
+    const interval = setInterval(() => loadReports(id), 30000);
     return () => clearInterval(interval);
   }, []);
 
-  const loadReports = async () => {
+  const loadReports = async (currentUserId?: string) => {
+    const activeUserId = currentUserId || localUserId;
     try {
       console.log('Solicitando reportes para el mapa...');
       const response = await reportService.getReports({ limit: 200 });

@@ -39,8 +39,13 @@ export default function ReportesPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   
   const router = useRouter();
-  const localUserId = userService.getUserId();
+  const [localUserId, setLocalUserId] = useState<string>('');
   const authUserId = session?.user?.id;
+
+  useEffect(() => {
+    // Inicializar ID local solo en el cliente para evitar mismatch de hidratación
+    setLocalUserId(userService.getUserId());
+  }, []);
 
   // Mapa de categorías con emojis
   const categories = [
@@ -53,19 +58,22 @@ export default function ReportesPage() {
   ];
 
   useEffect(() => {
-    loadReports();
+    if (localUserId) {
+      loadReports();
+    }
     
     // Auto-refresh cada 20 segundos si estamos online
     const interval = setInterval(() => {
-      if (navigator.onLine) {
+      if (navigator.onLine && localUserId) {
         loadReports();
       }
     }, 20000);
     
     return () => clearInterval(interval);
-  }, [tab, authUserId]);
+  }, [tab, authUserId, localUserId]);
 
   const loadReports = async () => {
+    if (!localUserId) return;
     setLoading(true);
     try {
       const params = {
@@ -111,7 +119,7 @@ export default function ReportesPage() {
               // Solo guardamos si no estamos filtrando por "mis reportes" para tener un caché general
               if (tab === 'todos') {
                 // Limpiar reportes antiguos sincronizados para mantener caché fresco
-                await db.reports.where('synced').equals(1).delete();
+                await db.reports.where('synced').equals(true).delete();
                 await db.reports.bulkAdd(mapToLocal);
               }
             } catch (cacheError) {
