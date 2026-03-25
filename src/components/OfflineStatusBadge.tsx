@@ -5,6 +5,7 @@ import { WifiOff, RefreshCw, CheckCircle2, Upload } from 'lucide-react';
 import { db } from '@/lib/db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { syncService } from '@/lib/sync-service';
+import { notificationService } from '@/lib/api-client';
 
 export function OfflineStatusBadge() {
   const [isOnline, setIsOnline] = useState(true);
@@ -51,7 +52,7 @@ export function OfflineStatusBadge() {
     try {
       const result = await syncService.syncOfflineReports();
       if (result.synced > 0) {
-        alert(`✓ ${result.synced} reporte(s) sincronizado(s)`);
+        notificationService.send('✓ Reportes Sincronizados', { body: `${result.synced} reporte(s) se subieron al servidor.` });
       }
     } catch (error) {
       console.error('Error en sincronización:', error);

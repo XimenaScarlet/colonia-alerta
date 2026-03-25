@@ -194,11 +194,15 @@ export default function ReportesPage() {
     if (!reportToDelete) return;
     
     setIsDeleting(true);
+    let serverDeleted = false;
+    let localDeleted = false;
+
     try {
       // 1. Intentar borrar del servidor si hay internet
       if (navigator.onLine) {
         try {
           await reportService.deleteReport(reportToDelete);
+          serverDeleted = true;
         } catch (serverError) {
           console.warn('Server delete failed, carrying on with local delete:', serverError);
         }
@@ -210,20 +214,27 @@ export default function ReportesPage() {
         // Intentar borrar por ID numérico (local)
         const numericId = parseInt(reportToDelete);
         if (!isNaN(numericId)) {
-          await db.reports.delete(numericId);
+          const deleteCount = await db.reports.where('id').equals(numericId).delete();
+          if (deleteCount > 0) localDeleted = true;
         }
         // Intentar borrar por ServerID (string)
-        await db.reports.where('serverId').equals(reportToDelete).delete();
+        const deleteCountServer = await db.reports.where('serverId').equals(reportToDelete).delete();
+        if (deleteCountServer > 0) localDeleted = true;
       } catch (e) {
         console.error('Dexie delete failed:', e);
       }
 
-      // 3. Actualizar UI de inmediato
-      setReports(prev => prev.filter(r => r.id !== reportToDelete));
-      notificationService.send('✅ Reporte Eliminado', { body: 'El reporte se borró exitosamente' });
+      // 3. Actualizar UI de inmediato si se borró en algún lado o si el servidor dijo OK
+      if (serverDeleted || localDeleted) {
+        setReports(prev => prev.filter(r => r.id !== reportToDelete && r.serverId !== reportToDelete));
+        notificationService.send('✅ Reporte Eliminado', { body: 'El reporte se borró exitosamente' });
+      } else if (navigator.onLine) {
+        // Si estamos online y no pudimos borrar nada, ahí sí avisar
+        notificationService.sendError('Error al eliminar', 'No se pudo eliminar el reporte del servidor.');
+      }
     } catch (error) {
       console.error('Error general al eliminar:', error);
-      // Solo alertar si falló TODO (UI no se pudo actualizar)
+      notificationService.sendError('Error', 'Hubo un problema al procesar la eliminación.');
     } finally {
       setIsDeleting(false);
       setReportToDelete(null);
@@ -274,7 +285,7 @@ export default function ReportesPage() {
         }
         return r;
       }));
-      alert('Error: ' + (error as Error).message);
+      notificationService.sendError('Error', (error as Error).message);
     }
   };
 

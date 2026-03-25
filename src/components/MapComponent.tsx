@@ -6,7 +6,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { reportService, userService } from '@/lib/api-client';
+import { reportService, userService, notificationService } from '@/lib/api-client';
 import { MoreVertical, Edit, Trash2, Share2, ThumbsUp } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 
@@ -258,14 +258,14 @@ export default function MapComponent() {
                           </button>
                           <button
                             onClick={async () => {
-                              if (confirm('¿Eliminar este reporte?')) {
-                                try {
-                                  await reportService.deleteReport(report.id);
-                                  setReports(prev => prev.filter(r => r.id !== report.id));
-                                  setExpandedMenuId(null);
-                                } catch (error) {
-                                  alert('Error al eliminar');
-                                }
+                              try {
+                                await reportService.deleteReport(report.id);
+                                setReports(prev => prev.filter(r => r.id !== report.id));
+                                setExpandedMenuId(null);
+                                notificationService.send('✅ Reporte Eliminado', { body: 'El reporte se borró exitosamente.' });
+                              } catch (error) {
+                                console.error('Delete error on map:', error);
+                                notificationService.sendError('Error', 'No se pudo eliminar el reporte del servidor.');
                               }
                             }}
                             className="w-full flex items-center gap-2 px-3 py-2 text-xs bg-white border border-red-200 text-red-600 rounded hover:bg-red-50 transition"
@@ -287,7 +287,7 @@ export default function MapComponent() {
                               ));
                               setExpandedMenuId(null);
                             } catch (error) {
-                              alert('Error al respaldar');
+                              notificationService.sendError('Error', 'No se pudo registrar el respaldo.');
                             }
                           }}
                           disabled={report.upvotedBy?.includes(authUserId || localUserId)}

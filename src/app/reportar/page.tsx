@@ -109,7 +109,6 @@ export default function CreateReportPage() {
           if (error.code === 3) msg = 'Tiempo de espera agotado (GPS lento). intenta de nuevo.';
           
           notificationService.sendError('Ubicación No Disponible', msg);
-          alert(msg);
         },
         { 
           enableHighAccuracy: true, 
@@ -161,7 +160,7 @@ export default function CreateReportPage() {
       }
     } catch (error) {
       console.error('Error loading report:', error);
-      alert('No se pudo cargar el reporte');
+      notificationService.sendError('Error', 'No se pudo cargar el reporte');
       router.push('/mapa');
     }
   };
@@ -171,19 +170,19 @@ export default function CreateReportPage() {
     
     // Validaciones
     if (!formData.title.trim()) {
-      alert('Por favor ingresa un título');
+      notificationService.sendError('Dato Faltante', 'Por favor ingresa un título');
       return;
     }
     if (!formData.category) {
-      alert('Por favor selecciona una categoría');
+      notificationService.sendError('Dato Faltante', 'Por favor selecciona una categoría');
       return;
     }
     if (!formData.description.trim()) {
-      alert('Por favor ingresa una descripción');
+      notificationService.sendError('Dato Faltante', 'Por favor ingresa una descripción');
       return;
     }
     if (formData.lat === 0 || formData.lng === 0) {
-      alert('Por favor establece una ubicación');
+      notificationService.sendError('Dato Faltante', 'Por favor establece una ubicación');
       return;
     }
 
@@ -232,7 +231,7 @@ export default function CreateReportPage() {
           }
         } catch (error) {
           console.error('Error updating report:', error);
-          alert('Error al actualizar reporte en el servidor.');
+          notificationService.sendError('Error de Actualización', 'No se pudo sincronizar la edición con el servidor.');
         }
       } else {
         // Modo creación
@@ -273,7 +272,7 @@ export default function CreateReportPage() {
       }
     } catch (error: any) {
       console.error('Error in handleSubmit:', error);
-      alert(error.message || 'Error inesperado al guardar el reporte.');
+      notificationService.sendError('Error al Guardar', error.message || 'Error inesperado al procesar el reporte.');
     } finally {
       setLoading(false);
     }
