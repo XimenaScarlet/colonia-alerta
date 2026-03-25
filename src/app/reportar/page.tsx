@@ -102,10 +102,19 @@ export default function CreateReportPage() {
           notificationService.sendLocationObtained(lat, lng);
         },
         (error) => {
-          console.error(error);
+          console.error('Geo Error:', error);
           setGeoLoading(false);
-          notificationService.sendError('Ubicación No Disponible', 'Por favor verifica los permisos de geolocalización');
-          alert('No se pudo obtener la ubicación. Por favor, verifica los permisos de geolocalización.');
+          let msg = 'No se pudo obtener la ubicación.';
+          if (error.code === 1) msg = 'Permiso de ubicación denegado.';
+          if (error.code === 3) msg = 'Tiempo de espera agotado (GPS lento). intenta de nuevo.';
+          
+          notificationService.sendError('Ubicación No Disponible', msg);
+          alert(msg);
+        },
+        { 
+          enableHighAccuracy: true, 
+          timeout: 10000, 
+          maximumAge: 0 
         }
       );
     }

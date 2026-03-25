@@ -1,4 +1,23 @@
 // Servicio para comunicarse con los API endpoints
+const FETCH_TIMEOUT = 7000; // 7 segundos
+
+async function fetchWithTimeout(url: string, options: any = {}) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    clearTimeout(id);
+    return response;
+  } catch (error) {
+    clearTimeout(id);
+    throw error;
+  }
+}
+
 export const reportService = {
   // Obtener lista de reportes con filtros
   async getReports(filters?: {
@@ -51,7 +70,7 @@ export const reportService = {
   }) {
     try {
       console.log('Creating report with data:', data);
-      const response = await fetch('/api/reports', {
+      const response = await fetchWithTimeout('/api/reports', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
