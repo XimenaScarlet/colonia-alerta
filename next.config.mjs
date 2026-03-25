@@ -5,32 +5,31 @@ const withPWA = withPWAInit({
   disable: process.env.NODE_ENV === "development",
   register: true,
   skipWaiting: true,
+  fallbacks: {
+    document: "/offline", // Página de fallback corregida
+  },
   additionalManifestEntries: [
-    { url: '/home', revision: '1' },
-    { url: '/reportes', revision: '1' },
-    { url: '/mapa', revision: '1' },
-    { url: '/mis-reportes', revision: '1' },
-    { url: '/reportar', revision: '1' },
-    { url: '/estadisticas', revision: '1' },
-    { url: '/auth/login', revision: '1' },
-    { url: '/auth/register', revision: '1' },
-    { url: '/admin', revision: '1' },
+    { url: '/home', revision: '2' },
+    { url: '/reportes', revision: '2' },
+    { url: '/mapa', revision: '2' },
+    { url: '/mis-reportes', revision: '2' },
+    { url: '/reportar', revision: '2' },
+    { url: '/estadisticas', revision: '2' },
+    { url: '/auth/login', revision: '2' },
+    { url: '/auth/register', revision: '2' },
+    { url: '/admin', revision: '2' },
+    { url: '/offline', revision: '2' },
   ],
   runtimeCaching: [
     {
       urlPattern: ({ url }) => url.origin === self.location.origin,
-      handler: "CacheFirst",
+      handler: "NetworkFirst", // Cambiado de CacheFirst a NetworkFirst para asegurar datos frescos
       options: {
         cacheName: "pages-cache",
         expiration: {
           maxEntries: 50,
           maxAgeSeconds: 86400,
         },
-        plugins: [
-          {
-            handlerDidError: async ({ request }) => self.fallback(request),
-          },
-        ],
       },
     },
     {
@@ -43,11 +42,6 @@ const withPWA = withPWAInit({
           maxEntries: 100,
           maxAgeSeconds: 24 * 60 * 60,
         },
-        plugins: [
-          {
-            handlerDidError: async ({ request }) => self.fallback(request),
-          },
-        ],
       },
     },
   ],
