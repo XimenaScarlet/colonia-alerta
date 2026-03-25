@@ -1,5 +1,5 @@
 // Servicio para comunicarse con los API endpoints
-const FETCH_TIMEOUT = 7000; // 7 segundos
+const FETCH_TIMEOUT = 15000; // 15 segundos (más tolerancia para Vercel cold starts)
 
 async function fetchWithTimeout(url: string, options: any = {}) {
   const controller = new AbortController();

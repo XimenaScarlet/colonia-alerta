@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!lat || !lng) {
+    if (lat === undefined || lng === undefined) {
       return NextResponse.json(
         { success: false, error: 'Ubicación no proporcionada' },
         { status: 400 }

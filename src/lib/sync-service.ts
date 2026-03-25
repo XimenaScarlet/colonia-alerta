@@ -29,6 +29,7 @@ export const syncService = {
             lng: report.lng,
             priority: report.priority,
             photoB64: report.photoUrl,
+            clientSideId: report.clientSideId || report.id?.toString(),
           });
 
           if (response.success) {
