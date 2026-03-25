@@ -9,10 +9,10 @@ const withPWA = withPWAInit({
     document: "/offline",
   },
   additionalManifestEntries: [
-    { url: "/", revision: "11" },
-    { url: "/home", revision: "11" },
-    { url: "/offline", revision: "11" },
-    { url: "/manifest.json", revision: "11" },
+    { url: "/", revision: "12" },
+    { url: "/home", revision: "12" },
+    { url: "/offline", revision: "12" },
+    { url: "/manifest.json", revision: "12" },
   ],
   runtimeCaching: [
     {
