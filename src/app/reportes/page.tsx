@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import dynamic from 'next/dynamic';
-import { Filter, ChevronDown, CheckCircle, Clock, MapPin, Trash2, Map, WifiOff, CloudOff, X } from 'lucide-react';
+import { CheckCircle, Clock, MapPin, Trash2, Map, WifiOff, CloudOff, X } from 'lucide-react';
 import { reportService, userService, notificationService } from '@/lib/api-client';
 
 const MiniMap = dynamic(() => import('@/components/MiniMap'), { 
@@ -34,7 +34,6 @@ export default function ReportesPage() {
   const [tab, setTab] = useState<'todos' | 'mios'>('todos');
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showFilters, setShowFilters] = useState(false);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [reportToDelete, setReportToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -42,14 +41,6 @@ export default function ReportesPage() {
   const router = useRouter();
   const localUserId = userService.getUserId();
   const authUserId = session?.user?.id;
-
-  // Filtros
-  const [filters, setFilters] = useState({
-    category: '',
-    status: '',
-    municipio: '',
-    colonia: '',
-  });
 
   // Mapa de categorías con emojis
   const categories = [
@@ -72,7 +63,7 @@ export default function ReportesPage() {
     }, 20000);
     
     return () => clearInterval(interval);
-  }, [tab, filters, authUserId]);
+  }, [tab, authUserId]);
 
   const loadReports = async () => {
     setLoading(true);
@@ -80,10 +71,6 @@ export default function ReportesPage() {
       const params = {
         limit: 100,
         ...(tab === 'mios' && { createdBy: authUserId || localUserId }),
-        ...(filters.category && { category: filters.category }),
-        ...(filters.status && { status: filters.status }),
-        ...(filters.municipio && { municipio: filters.municipio }),
-        ...(filters.colonia && { colonia: filters.colonia }),
       };
       
       console.log('Cargando reportes con params:', params);
@@ -122,7 +109,7 @@ export default function ReportesPage() {
               // Para no saturar, podemos limpiar los ya sincronizados antes de meter los nuevos del API
               // O simplemente añadir los nuevos. Aquí guardamos los del API como referencia offline.
               // Solo guardamos si no estamos filtrando por "mis reportes" para tener un caché general
-              if (tab === 'todos' && !filters.category && !filters.municipio) {
+              if (tab === 'todos') {
                 // Limpiar reportes antiguos sincronizados para mantener caché fresco
                 await db.reports.where('synced').equals(1).delete();
                 await db.reports.bulkAdd(mapToLocal);
@@ -166,10 +153,6 @@ export default function ReportesPage() {
           // Si hay auth, dependemos de si fueron creados con ese ID
           localReports = localReports.filter(r => r.createdBy === localUserId);
         }
-        if (filters.category) localReports = localReports.filter(r => r.category === filters.category);
-        if (filters.status) localReports = localReports.filter(r => r.status === filters.status);
-        if (filters.municipio) localReports = localReports.filter(r => r.municipio === filters.municipio);
-        if (filters.colonia) localReports = localReports.filter(r => r.colonia.toLowerCase().includes(filters.colonia.toLowerCase()));
       } catch (dbError) {
         console.error('Error al cargar base de datos local:', dbError);
       }
@@ -328,103 +311,6 @@ export default function ReportesPage() {
         </button>
       </div>
 
-      {/* Filter Button */}
-      <div className="mb-4">
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-        >
-          <Filter size={18} />
-          <span>Filtros</span>
-          <ChevronDown
-            size={18}
-            className={`ml-auto transition-transform ${
-              showFilters ? 'rotate-180' : ''
-            }`}
-          />
-        </button>
-      </div>
-
-      {/* Filters Panel */}
-      {showFilters && (
-        <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4 space-y-3 shadow-sm">
-          <div>
-            <label className="text-sm font-medium text-gray-700 block mb-2">
-              Categoría
-            </label>
-            <select
-              value={filters.category}
-              onChange={(e) =>
-                setFilters({ ...filters, category: e.target.value })
-              }
-              className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-sky-500 outline-none"
-            >
-              <option value="">Todas las categorías</option>
-              {categories.map(cat => (
-                <option key={cat.value} value={cat.value}>{cat.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-gray-700 block mb-2">
-              Estatus
-            </label>
-            <select
-              value={filters.status}
-              onChange={(e) =>
-                setFilters({ ...filters, status: e.target.value })
-              }
-              className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-sky-500 outline-none"
-            >
-              <option value="">Todos</option>
-              <option value="Pendiente">⏳ Pendiente</option>
-              <option value="En Proceso">⚙️ En Proceso</option>
-              <option value="Resuelto">✅ Resuelto</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-gray-700 block mb-2">
-              Municipio
-            </label>
-            <select
-              value={filters.municipio}
-              onChange={(e) =>
-                setFilters({ ...filters, municipio: e.target.value })
-              }
-              className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-sky-500 outline-none"
-            >
-              <option value="">Todos</option>
-              <option value="Saltillo">Saltillo</option>
-              <option value="Ramos Arizpe">Ramos Arizpe</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-gray-700 block mb-2">
-              Colonia
-            </label>
-            <input
-              type="text"
-              value={filters.colonia}
-              onChange={(e) =>
-                setFilters({ ...filters, colonia: e.target.value })
-              }
-              placeholder="Filtrar por colonia"
-              className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-sky-500 outline-none"
-            />
-          </div>
-
-          <button
-            onClick={() => setFilters({ category: '', status: '', municipio: '', colonia: '' })}
-            className="w-full py-2 text-sm font-medium text-red-600 border border-red-300 rounded-lg hover:bg-red-50 transition-colors"
-          >
-            Limpiar Filtros
-          </button>
-        </div>
-      )}
-
       {/* Reports List */}
       {loading ? (
         <div className="text-center py-8">
@@ -435,7 +321,7 @@ export default function ReportesPage() {
         <div className="text-center bg-yellow-50 rounded-2xl p-8 border border-yellow-200">
           <p className="text-lg font-medium text-gray-600 mb-1">📭 No hay reportes</p>
           <p className="text-sm text-gray-500">
-            {filters.category || filters.status ? 'Intenta cambiar los filtros' : 'Sé el primero en reportar'}
+            Sé el primero en reportar
           </p>
         </div>
       ) : (

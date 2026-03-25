@@ -429,7 +429,7 @@ export default function CreateReportPage() {
                 ) : (
                   <>
                     <MapPin className="w-4 h-4" />
-                    Prescrigar GPS
+                    Obtener GPS
                   </>
                 )}
               </button>

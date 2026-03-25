@@ -106,9 +106,13 @@ export default function MapComponent() {
 
   const loadReports = async () => {
     try {
+      console.log('Solicitando reportes para el mapa...');
       const response = await reportService.getReports({ limit: 200 });
+      console.log('Respuesta del mapa:', response);
       if (response && response.success) {
-        setReports(Array.isArray(response.data) ? response.data : []);
+        const data = Array.isArray(response.data) ? response.data : [];
+        console.log(`Cargados ${data.length} reportes para el mapa`);
+        setReports(data);
       } else {
         throw new Error('Respuesta inválida');
       }
@@ -120,6 +124,7 @@ export default function MapComponent() {
       try {
         const { db } = await import('@/lib/db');
         const offlineReports = await db.reports.toArray();
+        console.log(`Cargados ${offlineReports.length} reportes desde Dexie para el mapa`);
         const formattedLocal = offlineReports.map(r => ({
           id: r.id?.toString() || Math.random().toString(),
           title: r.title,
