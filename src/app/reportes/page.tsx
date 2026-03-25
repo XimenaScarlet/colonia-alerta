@@ -119,7 +119,7 @@ export default function ReportesPage() {
               // Solo guardamos si no estamos filtrando por "mis reportes" para tener un caché general
               if (tab === 'todos') {
                 // Limpiar reportes antiguos sincronizados para mantener caché fresco
-                await db.reports.where('synced').equals(true).delete();
+                await db.reports.where('synced').equals(true as any).delete();
                 await db.reports.bulkAdd(mapToLocal);
               }
             } catch (cacheError) {

@@ -87,10 +87,6 @@ export default function MapComponent() {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedMenuId, setExpandedMenuId] = useState<string | null>(null);
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const { data: session } = useSession();
-  
   const [localUserId, setLocalUserId] = useState<string>('');
   const searchParams = useSearchParams();
   const router = useRouter();
