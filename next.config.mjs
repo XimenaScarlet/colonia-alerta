@@ -5,10 +5,24 @@ const withPWA = withPWAInit({
   disable: process.env.NODE_ENV === "development",
   register: true,
   skipWaiting: true,
-  fallbacks: {
-    document: "/offline.html",
-  },
   runtimeCaching: [
+    {
+      urlPattern: ({ url }) => url.origin === self.location.origin,
+      handler: "NetworkFirst",
+      options: {
+        cacheName: "pages-cache",
+        networkTimeoutSeconds: 10,
+        expiration: {
+          maxEntries: 50,
+          maxAgeSeconds: 86400,
+        },
+        plugins: [
+          {
+            handlerDidError: async ({ request }) => self.fallback(request),
+          },
+        ],
+      },
+    },
     {
       urlPattern: /^https?:\/\//,
       handler: "NetworkFirst",
@@ -19,6 +33,11 @@ const withPWA = withPWAInit({
           maxEntries: 100,
           maxAgeSeconds: 24 * 60 * 60,
         },
+        plugins: [
+          {
+            handlerDidError: async ({ request }) => self.fallback(request),
+          },
+        ],
       },
     },
   ],
