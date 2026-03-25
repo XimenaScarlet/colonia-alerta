@@ -58,8 +58,9 @@ model VerificationToken {
 }
 
 model Report {
-  id          String   @id @default(uuid())
-  title       String
+  id            String   @id @default(uuid())
+  clientSideId  String?  @unique // ID generado por el cliente (Dexie) para de-duplicar
+  title         String
   description String
   category    String   // Bache, Luminaria Dañada, Basura Acumulada, Fuga de Agua, Inseguridad, Otro
   municipio   String   // Saltillo, Ramos Arizpe

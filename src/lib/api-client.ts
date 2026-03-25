@@ -67,6 +67,7 @@ export const reportService = {
     lng: number;
     priority?: string;
     photoB64?: string;
+    clientSideId?: string;
   }) {
     try {
       console.log('Creating report with data:', data);

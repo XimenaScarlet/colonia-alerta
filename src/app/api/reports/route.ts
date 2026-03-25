@@ -71,6 +71,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     const {
+      clientSideId,
       title,
       description,
       category,
@@ -82,10 +83,25 @@ export async function POST(request: NextRequest) {
       photoB64,
     } = body;
 
-    // Validaciones básicas - Permitir colonia vacía ya que el frontend aún no la captura
+    // Validaciones básicas
     if (!title || !description || !category || !municipio) {
       return NextResponse.json(
-        { success: false, error: 'Faltan campos requeridos: título, descripción, categoría y municipio' },
+        { success: false, error: 'Faltan campos requeridos' },
+        { status: 400 }
+      );
+    }
+
+    // Validación de longitud (5 a 400 caracteres)
+    if (title.length < 5 || title.length > 400) {
+      return NextResponse.json(
+        { success: false, error: 'El título debe tener entre 5 y 400 caracteres' },
+        { status: 400 }
+      );
+    }
+
+    if (description.length < 5 || description.length > 400) {
+      return NextResponse.json(
+        { success: false, error: 'La descripción debe tener entre 5 y 400 caracteres' },
         { status: 400 }
       );
     }
@@ -97,19 +113,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // DE-DUPLICACIÓN: Si viene un clientSideId, verificar si ya existe
+    if (clientSideId) {
+      const existingReport = await prisma.report.findUnique({
+        where: { clientSideId }
+      });
+      
+      if (existingReport) {
+        console.log('Reporte duplicado detectado (clientSideId):', clientSideId);
+        return NextResponse.json({
+          success: true,
+          data: existingReport,
+          duplicated: true
+        });
+      }
+    }
+
     const report = await prisma.report.create({
       data: {
+        clientSideId,
         title,
         description,
         category,
         municipio,
-        colonia,
+        colonia: colonia || '',
         lat: parseFloat(lat),
         lng: parseFloat(lng),
         priority: priority || 'Media',
         status: 'Pendiente',
         photoB64,
-        createdBy: session.user.id, // Usar ID del usuario autenticado
+        createdBy: session.user.id,
       },
     });
 

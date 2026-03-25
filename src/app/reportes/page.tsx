@@ -16,6 +16,7 @@ const MiniMap = dynamic(() => import('@/components/MiniMap'), {
 interface UIReport {
   id: string;
   serverId?: string;
+  clientSideId?: string;
   title: string;
   description: string;
   category: string;
@@ -47,6 +48,22 @@ export default function ReportesPage() {
   useEffect(() => {
     // Inicializar ID local solo en el cliente para evitar mismatch de hidratación
     setLocalUserId(userService.getUserId());
+
+    // RESET GLOBAL DE UNA VEZ (Petición del usuario para limpiar basura)
+    const hasReset = localStorage.getItem('db_reset_v18');
+    if (!hasReset) {
+      const clearDB = async () => {
+        try {
+          await db.reports.clear();
+          localStorage.setItem('db_reset_v18', 'true');
+          loadReports();
+          console.log('Database cleared for version 18 reset.');
+        } catch (e) {
+          console.error('Reset failed', e);
+        }
+      };
+      clearDB();
+    }
   }, []);
 
   // Mapa de categorías con emojis
@@ -79,7 +96,7 @@ export default function ReportesPage() {
     setLoading(true);
     try {
       const params = {
-        limit: 100,
+        limit: 500, // Aumentado para asegurar que se vean todos los reportes
         ...(tab === 'mios' && { createdBy: authUserId || localUserId }),
       };
       
@@ -141,6 +158,7 @@ export default function ReportesPage() {
         localReports = offlineReports.map((r: IncidentReport) => ({
           id: r.id?.toString() || Math.random().toString(),
           serverId: r.serverId,
+          clientSideId: r.clientSideId,
           title: r.title,
           description: r.description,
           category: r.category,

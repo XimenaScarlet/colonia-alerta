@@ -169,16 +169,16 @@ export default function CreateReportPage() {
     e.preventDefault();
     
     // Validaciones
-    if (!formData.title.trim()) {
-      notificationService.sendError('Dato Faltante', 'Por favor ingresa un título');
+    if (formData.title.trim().length < 5 || formData.title.trim().length > 400) {
+      notificationService.sendError('Dato Invalido', 'El título debe tener entre 5 y 400 caracteres');
       return;
     }
     if (!formData.category) {
       notificationService.sendError('Dato Faltante', 'Por favor selecciona una categoría');
       return;
     }
-    if (!formData.description.trim()) {
-      notificationService.sendError('Dato Faltante', 'Por favor ingresa una descripción');
+    if (formData.description.trim().length < 5 || formData.description.trim().length > 400) {
+      notificationService.sendError('Dato Invalido', 'La descripción debe tener entre 5 y 400 caracteres');
       return;
     }
     if (formData.lat === 0 || formData.lng === 0) {
@@ -205,17 +205,18 @@ export default function CreateReportPage() {
 
       const saveLocally = async (synced: boolean) => {
         try {
-          await db.reports.add({
+          const id = await db.reports.add({
             ...reportData,
             datetime: new Date().toISOString(),
             status: 'Pendiente',
             synced: synced,
             createdBy: session?.user?.id || userService.getUserId()
           });
-          return true;
+          if (id === undefined) return null;
+          return id.toString(); // Retornar el ID generado localmente
         } catch (dexieError) {
           console.error('CRITICAL: Dexie save failed', dexieError);
-          return false;
+          return null;
         }
       };
 
@@ -235,12 +236,25 @@ export default function CreateReportPage() {
         }
       } else {
         // Modo creación
+        const tempId = Math.random().toString(36).substring(7); // ID temporal para de-duplicar
+        const localId = await saveLocally(false); // Siempre guardamos localmente primero por seguridad
+        
         if (isOnline) {
           try {
             console.log('Enviando reporte al API...');
-            const response = await reportService.createReport(reportData);
+            const response = await reportService.createReport({
+              ...reportData,
+              clientSideId: localId || tempId
+            });
             
             if (response.success) {
+              // Si se creó en el servidor, marcar local como sincronizado si existe
+              if (localId) {
+                const numericId = parseInt(localId);
+                if (!isNaN(numericId)) {
+                  await db.reports.update(numericId, { synced: true, serverId: response.data.id });
+                }
+              }
               notificationService.sendReportCreated(formData.title, formData.category, '');
               setSubmitted(true);
               setTimeout(() => router.push('/reportes'), 1500);
@@ -248,9 +262,8 @@ export default function CreateReportPage() {
               throw new Error(response.error || 'Error en servidor');
             }
           } catch (error) {
-            console.warn('API submission failed or timed out, fallback to local', error);
-            const saved = await saveLocally(false);
-            if (saved) {
+            console.warn('API submission failed or timed out, using local fallback', error);
+            if (localId) {
               notificationService.sendReportSaved(formData.category, true);
               setSubmitted(true);
               setTimeout(() => router.push('/reportes'), 1500);
@@ -259,9 +272,8 @@ export default function CreateReportPage() {
             }
           }
         } else {
-          // Sin conexión
-          const saved = await saveLocally(false);
-          if (saved) {
+          // Sin conexión - ya se guardó arriba
+          if (localId) {
             notificationService.sendReportSaved(formData.category, true);
             setSubmitted(true);
             setTimeout(() => router.push('/reportes'), 1500);
@@ -314,10 +326,17 @@ export default function CreateReportPage() {
 
           {/* TÍTULO BREVE */}
           <div className="bg-gray-800/50 rounded-2xl p-6 border border-gray-700">
-            <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider mb-4">Título Breve</h3>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider">Título Breve</h3>
+              <span className={`text-xs ${formData.title.length < 5 || formData.title.length > 400 ? 'text-red-400' : 'text-gray-500'}`}>
+                {formData.title.length} / 400
+              </span>
+            </div>
             <input 
               type="text" 
               required 
+              minLength={5}
+              maxLength={400}
               placeholder="Ej: Socavón en Calle Principal"
               className="w-full p-4 bg-gray-900/50 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
               value={formData.title}
@@ -327,9 +346,16 @@ export default function CreateReportPage() {
 
           {/* DESCRIPCIÓN DETALLADA */}
           <div className="bg-gray-800/50 rounded-2xl p-6 border border-gray-700">
-            <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider mb-4">Descripción Detallada</h3>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider">Descripción Detallada</h3>
+              <span className={`text-xs ${formData.description.length < 5 || formData.description.length > 400 ? 'text-red-400' : 'text-gray-500'}`}>
+                {formData.description.length} / 400
+              </span>
+            </div>
             <textarea 
               required
+              minLength={5}
+              maxLength={400}
               rows={4}
               placeholder="Describe lo que está ocurriendo..."
               className="w-full p-4 bg-gray-900/50 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
