@@ -3,6 +3,7 @@
   "short_name": "Colonia Alerta",
   "description": "Reporte ciudadano de incidencias en Saltillo y Ramos Arizpe",
   "start_url": "/home",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#0ea5e9",

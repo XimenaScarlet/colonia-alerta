@@ -6,24 +6,35 @@ const withPWA = withPWAInit({
   register: true,
   skipWaiting: true,
   fallbacks: {
-    document: "/offline", // Página de fallback corregida
+    document: "/offline",
   },
   additionalManifestEntries: [
-    { url: '/home', revision: '2' },
-    { url: '/reportes', revision: '2' },
-    { url: '/mapa', revision: '2' },
-    { url: '/mis-reportes', revision: '2' },
-    { url: '/reportar', revision: '2' },
-    { url: '/estadisticas', revision: '2' },
-    { url: '/auth/login', revision: '2' },
-    { url: '/auth/register', revision: '2' },
-    { url: '/admin', revision: '2' },
-    { url: '/offline', revision: '2' },
+    { url: "/", revision: "4" },
+    { url: "/home", revision: "4" },
+    { url: "/reportes", revision: "4" },
+    { url: "/mapa", revision: "4" },
+    { url: "/mis-reportes", revision: "4" },
+    { url: "/reportar", revision: "4" },
+    { url: "/estadisticas", revision: "4" },
+    { url: "/auth/login", revision: "4" },
+    { url: "/auth/register", revision: "4" },
+    { url: "/offline", revision: "4" },
   ],
   runtimeCaching: [
     {
+      urlPattern: ({ url }) => url.origin === self.location.origin && (url.pathname === "/" || url.pathname === "/home" || url.pathname === "/offline"),
+      handler: "CacheFirst", // Forzar cache para las páginas esenciales en el arranque
+      options: {
+        cacheName: "essential-pages",
+        expiration: {
+          maxEntries: 10,
+          maxAgeSeconds: 86400,
+        },
+      },
+    },
+    {
       urlPattern: ({ url }) => url.origin === self.location.origin,
-      handler: "NetworkFirst", // Cambiado de CacheFirst a NetworkFirst para asegurar datos frescos
+      handler: "NetworkFirst",
       options: {
         cacheName: "pages-cache",
         expiration: {
@@ -33,14 +44,24 @@ const withPWA = withPWAInit({
       },
     },
     {
-      urlPattern: /^https?:\/\//,
-      handler: "NetworkFirst",
+      urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/i,
+      handler: "CacheFirst",
       options: {
-        cacheName: "offline-cache",
-        networkTimeoutSeconds: 10,
+        cacheName: "images-cache",
         expiration: {
           maxEntries: 100,
-          maxAgeSeconds: 24 * 60 * 60,
+          maxAgeSeconds: 30 * 24 * 60 * 60,
+        },
+      },
+    },
+    {
+      urlPattern: /^https?:\/\/fonts\.(?:googleapis|gstatic)\.com\/.*/i,
+      handler: "CacheFirst",
+      options: {
+        cacheName: "google-fonts",
+        expiration: {
+          maxEntries: 10,
+          maxAgeSeconds: 365 * 24 * 60 * 60,
         },
       },
     },
