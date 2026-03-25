@@ -414,15 +414,17 @@ export default function ReportesPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span
-                    className={`flex items-center gap-1 text-xs font-medium px-3 py-1 rounded-full whitespace-nowrap ${getStatusColor(
-                      report.status
-                    )}`}
-                  >
-                    {report.status === 'Pendiente' && <Clock size={12} />}
-                    {report.status === 'Resuelto' && <CheckCircle size={12} />}
-                    {report.status}
-                  </span>
+                  {report.status !== 'Pendiente' && (
+                    <span
+                      className={`flex items-center gap-1 text-xs font-medium px-3 py-1 rounded-full whitespace-nowrap ${getStatusColor(
+                        report.status
+                      )}`}
+                    >
+                      {report.status === 'Resuelto' && <CheckCircle size={12} />}
+                      {report.status === 'En Proceso' && <Clock size={12} />}
+                      {report.status}
+                    </span>
+                  )}
                   
                   {/* Botón de eliminar (solo mis reportes) */}
                   {(tab === 'mios' || report.createdBy === authUserId || report.createdBy === localUserId) && (
@@ -506,9 +508,11 @@ export default function ReportesPage() {
                 <span className="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-sky-100 text-sky-700">
                   {getCategoryLabel(selectedReport.category)}
                 </span>
-                <span className={`text-[10px] font-medium px-2 py-1 rounded-full ${getStatusColor(selectedReport.status)}`}>
-                  {selectedReport.status}
-                </span>
+                {selectedReport.status !== 'Pendiente' && (
+                  <span className={`text-[10px] font-medium px-2 py-1 rounded-full ${getStatusColor(selectedReport.status)}`}>
+                    {selectedReport.status}
+                  </span>
+                )}
               </div>
               
               <h3 className="font-bold text-gray-900 text-lg leading-tight mb-2">
