@@ -85,7 +85,7 @@ export default function ReportesPage() {
       
       console.log('Cargando reportes con params:', params);
       
-      let apiReports: Report[] = [];
+      let apiReports: any[] = [];
       let isOnline = navigator.onLine;
 
       // 1. Intentar cargar desde API si hay conexión
@@ -97,7 +97,6 @@ export default function ReportesPage() {
             
             // --- NUEVO: Guardar reportes del API en caché local (Dexie) para offline ---
             try {
-              const { db } = await import('@/lib/db');
               // Mapear reportes del API al esquema local
               const mapToLocal = apiReports.map(r => ({
                 // No asignamos ID numérico para que Dexie lo maneje o usemos uno consistente
@@ -151,7 +150,7 @@ export default function ReportesPage() {
           lat: r.lat,
           lng: r.lng,
           createdAt: r.datetime,
-          createdBy: localUserId, // Por simplicidad localUserId identifica al dueño local
+          createdBy: r.createdBy || localUserId, 
           synced: r.synced,
           upvotes: 0,
           upvotedBy: []
@@ -168,12 +167,8 @@ export default function ReportesPage() {
       }
 
       // 3. Mezclar y de-duplicar
-      // Estrategia: Mostrar todos los del API + los locales que NO están sincronizados
-      // (Los locales sincronizados ya deberían estar en el API)
-      const unsyncedLocal = localReports.filter(r => !r.synced);
-      
       // Combinar ambos conjuntos
-      const combined = [...apiReports, ...unsyncedLocal];
+      const combined: UIReport[] = [...apiReports, ...unsyncedLocal];
       
       // Ordenar por fecha descendente
       combined.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -280,11 +275,11 @@ export default function ReportesPage() {
     }
   };
 
-  const handleCardClick = (report: Report) => {
+  const handleCardClick = (report: UIReport) => {
     setSelectedReport(report);
   };
 
-  const getWhatsAppUrl = (report: Report) => {
+  const getWhatsAppUrl = (report: UIReport) => {
     const text = `🚨 ¡Atención vecinos! Acabo de reportar un/a ${report.category} en ${report.colonia}, ${report.municipio}. Manténganse alerta. Ver más: https://colonia-alerta.vercel.app/mapa?lat=${report.lat}&lng=${report.lng}`;
     return `https://wa.me/?text=${encodeURIComponent(text)}`;
   };
