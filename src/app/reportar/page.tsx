@@ -248,25 +248,34 @@ export default function CreateReportPage() {
             });
             
             if (response.success) {
+              console.log('API report created successfully:', response.data.id);
               // Si se creó en el servidor, marcar local como sincronizado si existe
               if (localId) {
                 const numericId = parseInt(localId);
                 if (!isNaN(numericId)) {
-                  await db.reports.update(numericId, { synced: true, serverId: response.data.id });
+                  try {
+                    await db.reports.update(numericId, { synced: true, serverId: response.data.id });
+                    console.log('Local report marked as synced in Dexie');
+                  } catch (updateError) {
+                    console.error('Error updating local sync status:', updateError);
+                  }
                 }
               }
               notificationService.sendReportCreated(formData.title, formData.category, '');
               setSubmitted(true);
               setTimeout(() => router.push('/reportes'), 1500);
             } else {
-              throw new Error(response.error || 'Error en servidor');
+              throw new Error(response.error || 'Error respuesta servidor');
             }
-          } catch (error) {
-            console.warn('API submission failed or timed out, using local fallback', error);
+          } catch (error: any) {
+            console.warn('API submission failed. Error:', error.message || error);
+            // Mostrar error real para diagnóstico
+            notificationService.sendError('Fallo Subida Online', `Error: ${error.message || 'Desconocido'}. Guardando offline...`);
+            
             if (localId) {
               notificationService.sendReportSaved(formData.category, true);
               setSubmitted(true);
-              setTimeout(() => router.push('/reportes'), 1500);
+              setTimeout(() => router.push('/reportes'), 2000);
             } else {
               throw new Error('No se pudo guardar ni en línea ni localmente.');
             }

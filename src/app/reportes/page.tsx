@@ -186,7 +186,26 @@ export default function ReportesPage() {
 
       // 3. Mezclar y de-duplicar
       // Estrategia: Mostrar todos los del API + los locales que NO están sincronizados
-      const unsyncedLocal = localReports.filter(r => !r.synced);
+      // Pero si un local "no sincronizado" ya aparece en el API (por clientSideId), lo reconciliamos
+      const apiClientSideIds = new Set(apiReports.map(r => r.clientSideId).filter(Boolean));
+      
+      const unsyncedLocal: UIReport[] = [];
+      
+      for (const local of localReports) {
+        if (local.synced) continue;
+        
+        // Si el reporte local ya está en el API, marcarlo como sincronizado en la DB y no mostrarlo como duplicado
+        if (local.clientSideId && apiClientSideIds.has(local.clientSideId)) {
+          console.log(`Reconciliando reporte local ${local.id} con versión del servidor`);
+          const numericId = parseInt(local.id);
+          if (!isNaN(numericId)) {
+            db.reports.update(numericId, { synced: true }).catch(e => console.error('Error auto-syncing:', e));
+          }
+          continue;
+        }
+        
+        unsyncedLocal.push(local);
+      }
       
       // Combinar ambos conjuntos
       const combined: UIReport[] = [...apiReports, ...unsyncedLocal];
