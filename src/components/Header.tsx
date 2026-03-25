@@ -65,7 +65,6 @@ export function Header() {
     '/mapa': 'Mapa de Incidencias',
     '/reportar': 'Nuevo Reporte',
     '/mis-reportes': 'Mis Reportes',
-    '/estadisticas': 'Estadísticas',
     '/admin': 'Panel de Administración',
   };
 

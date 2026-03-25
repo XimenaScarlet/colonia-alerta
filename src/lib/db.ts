@@ -19,7 +19,7 @@ export interface IncidentReport {
 }
 
 const db = new Dexie('ColoniaAlertaDB') as Dexie & {
-  reports: EntityTable<IncidentReport, 'id'>;
+  reports: EntityTable<IncidentReport, 'id'> ;
 };
 
 db.version(1).stores({

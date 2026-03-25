@@ -176,11 +176,6 @@ export const reportService = {
     return response.json();
   },
 
-  // Obtener estadísticas
-  async getStatistics() {
-    const response = await fetch('/api/statistics');
-    return response.json();
-  },
 
   // Votar por un reporte (apoyar)
   async upvoteReport(id: string, localUserId?: string) {
