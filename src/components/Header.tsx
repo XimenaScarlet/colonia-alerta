@@ -87,7 +87,7 @@ export function Header() {
           )}
           <button 
             onClick={() => {
-              if (latestExternalReport) setShowNotificationPopup(!showNotificationPopup);
+              setShowNotificationPopup(!showNotificationPopup);
               setHasNewAlarm(false);
             }}
             className={`p-2 relative rounded-full transition-all duration-300 ${hasNewAlarm ? 'bg-red-500 hover:bg-red-600 animate-pulse text-white shadow-lg shadow-red-500/50' : 'hover:bg-sky-600'}`}
@@ -105,27 +105,40 @@ export function Header() {
       </header>
 
       {/* Popup / Dropdown de Notificación (Alarma) */}
-      {showNotificationPopup && latestExternalReport && (
-        <div className="fixed top-16 right-4 bg-white rounded-xl shadow-2xl p-4 w-72 z-50 border border-red-100 animate-in slide-in-from-top-4">
+      {showNotificationPopup && (
+        <div className="fixed top-16 right-4 bg-white rounded-xl shadow-2xl p-4 w-72 z-50 border border-sky-100 animate-in slide-in-from-top-4">
           <div className="flex justify-between items-start mb-2">
-            <h3 className="font-bold text-red-600 flex items-center gap-1">🚨 Alerta Vecinal</h3>
+            <h3 className={`font-bold flex items-center gap-1 ${latestExternalReport ? 'text-red-600' : 'text-sky-600'}`}>
+              {latestExternalReport ? '🚨 Alerta Vecinal' : '🔔 Notificaciones'}
+            </h3>
             <button onClick={() => setShowNotificationPopup(false)} className="text-gray-400 hover:text-gray-700">
               <X size={18} />
             </button>
           </div>
-          <p className="text-sm font-semibold text-gray-800 mb-1">{latestExternalReport.category}</p>
-          <p className="text-xs text-gray-600 mb-3">
-            Alguien acaba de advertir un problema cerca en <strong>{latestExternalReport.colonia}, {latestExternalReport.municipio}</strong>.
-          </p>
           
-          <div className="flex gap-2">
-            <button onClick={() => setShowNotificationPopup(false)} className="flex-1 text-xs bg-gray-50 text-gray-600 font-medium py-2 rounded-lg border border-gray-200 hover:bg-gray-100">
-              Cerrar
-            </button>
-            <a href="/mapa" className="flex-1 text-xs text-center bg-red-50 text-red-600 font-medium py-2 rounded-lg border border-red-100 hover:bg-red-100">
-              Ver Mapa
-            </a>
-          </div>
+          {latestExternalReport ? (
+            <>
+              <p className="text-sm font-semibold text-gray-800 mb-1">{latestExternalReport.category}</p>
+              <p className="text-xs text-gray-600 mb-3">
+                Alguien acaba de advertir un problema cerca en <strong>{latestExternalReport.colonia}, {latestExternalReport.municipio}</strong>.
+              </p>
+              
+              <div className="flex gap-2">
+                <button onClick={() => setShowNotificationPopup(false)} className="flex-1 text-xs bg-gray-50 text-gray-600 font-medium py-2 rounded-lg border border-gray-200 hover:bg-gray-100">
+                  Cerrar
+                </button>
+                <a href="/mapa" className="flex-1 text-xs text-center bg-red-50 text-red-600 font-medium py-2 rounded-lg border border-red-100 hover:bg-red-100">
+                  Ver Mapa
+                </a>
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-sm text-gray-600">
+                Aquí te aparecerán las notificaciones de tus reportes y alertas cercanas.
+              </p>
+            </div>
+          )}
         </div>
       )}
     </>
