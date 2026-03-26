@@ -48,12 +48,12 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`antialiased bg-white text-gray-900 pb-16 pt-14 min-h-screen`}
+        className="antialiased bg-background text-foreground pb-24 pt-16 min-h-screen"
       >
         <AuthProvider>
           <SyncInitializer />
           <Header />
-          <main className="min-h-[calc(100vh-7.5rem)]">{children}</main>
+          <main className="min-h-[calc(100vh-10rem)]">{children}</main>
           <BottomNav />
         </AuthProvider>
       </body>

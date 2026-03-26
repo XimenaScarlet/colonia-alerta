@@ -72,13 +72,13 @@ export function Header() {
 
   return (
     <>
-      <header className="fixed top-0 w-full bg-sky-500 text-white h-14 flex items-center justify-between px-4 z-50 shadow-md pt-safe">
-        <div className="font-semibold text-lg">{title}</div>
-        <div className="flex items-center gap-2">
+      <header className="fixed top-0 w-full bg-background/80 backdrop-blur-md text-foreground h-16 flex items-center justify-between px-6 z-50 pt-safe transition-all duration-300">
+        <div className="font-bold text-xl text-blue-accent tracking-tight">Colonia Alerta</div>
+        <div className="flex items-center gap-4">
           {session?.user?.role === 'admin' && (
             <Link 
               href="/admin"
-              className="p-2 rounded-full hover:bg-sky-600 transition-colors"
+              className="p-2 rounded-full hover:bg-card-bg transition-colors text-gray-400 hover:text-white"
               title="Panel Admin"
             >
               <Settings size={20} />
@@ -89,17 +89,27 @@ export function Header() {
               setShowNotificationPopup(!showNotificationPopup);
               setHasNewAlarm(false);
             }}
-            className={`p-2 relative rounded-full transition-all duration-300 ${hasNewAlarm ? 'bg-red-500 hover:bg-red-600 animate-pulse text-white shadow-lg shadow-red-500/50' : 'hover:bg-sky-600'}`}
+            className={`p-2 relative rounded-xl transition-all duration-300 ${hasNewAlarm ? 'bg-red-500 text-white shadow-lg shadow-red-500/50' : 'bg-card-bg text-gray-400 hover:text-white'}`}
             title="Notificaciones"
           >
             <Bell size={20} className={hasNewAlarm ? 'animate-bounce' : ''} />
             {hasNewAlarm && (
-              <span className="absolute top-0 right-0 w-3 h-3 bg-red-400 border-2 border-white rounded-full animate-ping"></span>
+              <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-white border-2 border-red-500 rounded-full"></span>
             )}
             {!hasNewAlarm && latestExternalReport && (
-               <span className="absolute top-1 right-1 w-2 h-2 bg-orange-400 rounded-full"></span>
+               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-blue-accent rounded-full"></span>
             )}
           </button>
+          
+          <div className="w-10 h-10 rounded-xl overflow-hidden border border-card-border bg-gradient-to-br from-orange-400 to-red-500 p-0.5 shadow-sm active:scale-95 transition-transform cursor-pointer">
+            <div className="w-full h-full bg-white rounded-[10px] flex items-center justify-center text-lg">
+              {session?.user?.image ? (
+                <img src={session.user.image} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                "👤"
+              )}
+            </div>
+          </div>
         </div>
       </header>
 
